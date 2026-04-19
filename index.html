@@ -30,6 +30,29 @@
             background: #1a1a2e;
             z-index: 10;
             flex-wrap: wrap;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .fullscreen-mode .toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .fullscreen-mode .toolbar.toolbar-visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fullscreen-mode .info-bar {
+            transform: translateY(100%);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .toolbar button, .toolbar select {
@@ -341,6 +364,42 @@
                 document.exitFullscreen();
             }
         }
+
+        // Fullscreen toolbar auto-hide
+        let toolbarTimeout = null;
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('fullscreen-mode');
+            } else {
+                document.body.classList.remove('fullscreen-mode');
+                toolbar.classList.remove('toolbar-visible');
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!document.fullscreenElement) return;
+            if (e.clientY < 80) {
+                toolbar.classList.add('toolbar-visible');
+                clearTimeout(toolbarTimeout);
+                toolbarTimeout = setTimeout(() => {
+                    toolbar.classList.remove('toolbar-visible');
+                }, 2000);
+            }
+        });
+
+        toolbar.addEventListener('mouseenter', () => {
+            if (!document.fullscreenElement) return;
+            clearTimeout(toolbarTimeout);
+            toolbar.classList.add('toolbar-visible');
+        });
+
+        toolbar.addEventListener('mouseleave', () => {
+            if (!document.fullscreenElement) return;
+            toolbarTimeout = setTimeout(() => {
+                toolbar.classList.remove('toolbar-visible');
+            }, 1000);
+        });
 
         // Show LAN URL
         lanUrl.textContent = window.location.href;
