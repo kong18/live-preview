@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Preview - Flip Horizontal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 20px;
+            background: #1a1a2e;
+            z-index: 10;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button, .toolbar select {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .toolbar button {
+            background: #16213e;
+            color: #e0e0e0;
+        }
+
+        .toolbar button:hover {
+            background: #0f3460;
+        }
+
+        .toolbar button.active {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .toolbar select {
+            background: #16213e;
+            color: #e0e0e0;
+            outline: none;
+        }
+
+        .toolbar .status {
+            font-size: 12px;
+            color: #888;
+            margin-left: 10px;
+        }
+
+        .preview-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #preview {
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+
+        #preview.flipped {
+            transform: scaleX(-1);
+        }
+
+        #preview.flipped-v {
+            transform: scaleY(-1);
+        }
+
+        #preview.flipped.flipped-v {
+            transform: scaleX(-1) scaleY(-1);
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 20;
+            background: rgba(233, 69, 96, 0.8);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(233, 69, 96, 1);
+            transform: scale(1.1);
+        }
+
+        .source-selector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            gap: 20px;
+        }
+
+        .source-selector h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .source-selector .source-btn {
+            padding: 16px 40px;
+            font-size: 18px;
+            border: 2px solid #e94560;
+            background: transparent;
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 280px;
+            text-align: center;
+        }
+
+        .source-selector .source-btn:hover {
+            background: #e94560;
+        }
+
+        .info-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 20;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .toolbar { padding: 8px 10px; gap: 6px; }
+            .toolbar button { padding: 6px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Source Selector -->
+    <div class="source-selector" id="sourceSelector">
+        <h2>Chọn nguồn video</h2>
+        <button class="source-btn" onclick="startCamera()">📷 Camera (Webcam)</button>
+        <button class="source-btn" onclick="startScreen()">🖥️ Chia sẻ màn hình</button>
+        <button class="source-btn" onclick="startWindow()">🪟 Chia sẻ cửa sổ</button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar" id="toolbar">
+        <button id="btnFlipH" onclick="toggleFlipH()">↔️ Flip Ngang</button>
+        <button id="btnFlipV" onclick="toggleFlipV()">↕️ Flip Dọc</button>
+        <select id="cameraSelect" class="hidden" onchange="switchCamera()"></select>
+        <button onclick="changeSource()">🔄 Đổi nguồn</button>
+        <button onclick="toggleFullscreen()">⛶ Toàn màn hình</button>
+        <span class="status" id="statusText"></span>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-container">
+        <video id="preview" autoplay playsinline muted></video>
+    </div>
+
+    <!-- Info -->
+    <div class="info-bar" id="infoBar">
+        Truy cập từ thiết bị khác cùng mạng: <strong id="lanUrl">đang tải...</strong>
+    </div>
+
+    <script>
+        const preview = document.getElementById('preview');
+        const sourceSelector = document.getElementById('sourceSelector');
+        const toolbar = document.getElementById('toolbar');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const statusText = document.getElementById('statusText');
+        const lanUrl = document.getElementById('lanUrl');
+
+        let currentStream = null;
+        let isFlippedH = false;
+        let isFlippedV = false;
+
+        // Flip Horizontal
+        function toggleFlipH() {
+            isFlippedH = !isFlippedH;
+            preview.classList.toggle('flipped', isFlippedH);
+            document.getElementById('btnFlipH').classList.toggle('active', isFlippedH);
+            updateStatus();
+        }
+
+        // Flip Vertical
+        function toggleFlipV() {
+            isFlippedV = !isFlippedV;
+            preview.classList.toggle('flipped-v', isFlippedV);
+            document.getElementById('btnFlipV').classList.toggle('active', isFlippedV);
+            updateStatus();
+        }
+
+        function updateStatus() {
+            const parts = [];
+            if (isFlippedH) parts.push('Flip Ngang');
+            if (isFlippedV) parts.push('Flip Dọc');
+            statusText.textContent = parts.length ? '🔄 ' + parts.join(' + ') : '';
+        }
+
+        // Stop current stream
+        function stopStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+                currentStream = null;
+            }
+        }
+
+        // Start Camera
+        async function startCamera() {
+            stopStream();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                currentStream = stream;
+                preview.srcObject = stream;
+                sourceSelector.classList.add('hidden');
+                await loadCameras();
+                cameraSelect.classList.remove('hidden');
+            } catch (e) {
+                alert('Không thể truy cập camera: ' + e.message);
+            }
+        }
+
+        // Start Screen Share
+        async function startScreen() {
+            stopStream();
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                currentStream = stream;
+                preview.srcObject = stream;
+                sourceSelector.classList.add('hidden');
+                cameraSelect.classList.add('hidden');
+
+                stream.getVideoTracks()[0].onended = () => {
+                    changeSource();
+                };
+            } catch (e) {
+                alert('Không thể chia sẻ màn hình: ' + e.message);
+            }
+        }
+
+        // Start Window Share
+        async function startWindow() {
+            await startScreen(); // Same API, user picks window
+        }
+
+        // Load camera list
+        async function loadCameras() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const cameras = devices.filter(d => d.kind === 'videoinput');
+            cameraSelect.innerHTML = '';
+            cameras.forEach((cam, i) => {
+                const opt = document.createElement('option');
+                opt.value = cam.deviceId;
+                opt.textContent = cam.label || `Camera ${i + 1}`;
+                cameraSelect.appendChild(opt);
+            });
+        }
+
+        // Switch camera
+        async function switchCamera() {
+            stopStream();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: { exact: cameraSelect.value },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false
+                });
+                currentStream = stream;
+                preview.srcObject = stream;
+            } catch (e) {
+                alert('Không thể chuyển camera: ' + e.message);
+            }
+        }
+
+        // Change source
+        function changeSource() {
+            stopStream();
+            preview.srcObject = null;
+            sourceSelector.classList.remove('hidden');
+            cameraSelect.classList.add('hidden');
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Show LAN URL
+        lanUrl.textContent = window.location.href;
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') toggleFlipH();
+            if (e.key === 'v' || e.key === 'V') toggleFlipV();
+            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+            if (e.key === 'Escape' && currentStream) changeSource();
+        });
+    </script>
+</body>
+</html>
