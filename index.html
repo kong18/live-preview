@@ -277,7 +277,7 @@
             stopStream();
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 165 } },
                     audio: false
                 });
                 currentStream = stream;
@@ -295,7 +295,7 @@
             stopStream();
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } },
                     audio: false
                 });
                 currentStream = stream;
@@ -337,7 +337,8 @@
                     video: {
                         deviceId: { exact: cameraSelect.value },
                         width: { ideal: 1920 },
-                        height: { ideal: 1080 }
+                        height: { ideal: 1080 },
+                        frameRate: { ideal: 60 }
                     },
                     audio: false
                 });
