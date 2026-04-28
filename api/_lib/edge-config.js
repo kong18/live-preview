@@ -8,6 +8,10 @@ const CACHE_TTL = 30000; // 30 seconds
  * Get value from Edge Config with fallback and caching
  */
 async function getConfig(key, fallback = null) {
+  if (!process.env.EDGE_CONFIG) {
+    throw new Error('MISSING_EDGE_CONFIG');
+  }
+
   const cached = cache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return cached.value;

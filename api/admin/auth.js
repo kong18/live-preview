@@ -12,7 +12,7 @@ const { getConfig } = require('../_lib/edge-config');
  * Response:
  *   { token: string, expiresIn: string } or { error, message }
  */
-module.exports = async (req, res) => {
+module.exports = async function adminAuth(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -73,6 +73,13 @@ module.exports = async (req, res) => {
       email,
     });
   } catch (err) {
+    if (err?.message === 'MISSING_EDGE_CONFIG') {
+      return res.status(500).json({
+        error: 'CONFIG_NOT_READY',
+        message: 'Missing EDGE_CONFIG environment variable. Pull Vercel env vars or add the Edge Config connection string in the Vercel project settings.',
+      });
+    }
+
     console.error('Auth error:', err);
     return res.status(500).json({
       error: 'INTERNAL_ERROR',

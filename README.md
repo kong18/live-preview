@@ -98,6 +98,7 @@ project/
    - Go to Project Settings → Environment Variables
    - Add: `LICENSE_SECRET`, `ADMIN_JWT_SECRET`
    - Apply to: Production, Preview
+  - Ensure `EDGE_CONFIG` is present in the project environment so `@vercel/edge-config` can read `admin_credentials`
 
 2. **Create first admin user**
    ```bash
