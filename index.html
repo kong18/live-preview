@@ -3,18 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Filmong Photobooth Pro</title>
+    <title>Filmong Live Preview</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=VT323&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --surface-primary: #f3d8e6; /* Pastel Pink */
-        --action-lead: #8a0a0a; /* Filmong Red */
+        --surface-primary: #f3d8e6;
+        --action-lead: #8a0a0a;
         --surface-white: #ffffff;
         --text-neutral: #1a1a1a;
-        --safe-zone: 40px;
       }
 
       * {
@@ -25,13 +24,45 @@
       }
 
       body {
-        background: var(--surface-primary);
+        /* Y2K Dot Grid Pattern */
+        background-color: var(--surface-primary);
+        background-image: radial-gradient(
+          rgba(138, 10, 10, 0.06) 2px,
+          transparent 2px
+        );
+        background-size: 30px 30px;
+
         color: var(--text-neutral);
         font-family: "Montserrat", sans-serif;
         overflow: hidden;
         height: 100vh;
         display: flex;
         flex-direction: column;
+        position: relative;
+      }
+
+      /* --- 🎨 NEW: Ambient Space-Filling Typography --- */
+      /* These huge vertical texts fill the left/right whitespace beautifully without adding clutter */
+      .ambient-text {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 15vw;
+        font-weight: 900;
+        color: rgba(138, 10, 10, 0.03); /* Extremely subtle */
+        pointer-events: none;
+        z-index: 0;
+        white-space: nowrap;
+        user-select: none;
+      }
+      .ambient-left {
+        left: -5vw;
+        writing-mode: vertical-rl;
+        transform: translateY(-50%) rotate(180deg);
+      }
+      .ambient-right {
+        right: -5vw;
+        writing-mode: vertical-rl;
       }
 
       /* --- ✨ Filmong Branding --- */
@@ -46,8 +77,8 @@
         transition: opacity 0.5s ease;
       }
       .fullscreen-mode .brand-header {
-        opacity: 0.3;
-      }
+        opacity: 0.2;
+      } /* Fades out during full immersion */
       .logo-main {
         font-weight: 900;
         font-size: 32px;
@@ -61,25 +92,59 @@
         letter-spacing: 4px;
         color: var(--text-neutral);
         text-transform: uppercase;
+        background: var(--surface-primary);
+        padding: 0 10px;
       }
 
-      /* --- 📽️ Preview Session Container --- */
+      /* --- 📊 Performance Monitor --- */
+      .perf-monitor {
+        position: fixed;
+        top: 25px;
+        right: 25px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #00ff00;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 0, 0.3);
+        z-index: 150;
+        backdrop-filter: blur(5px);
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: opacity 0.2s ease;
+      }
+      .perf-monitor span {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      /* --- 📽️ Main Spatial Layout --- */
       .app-container {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 90px 40px 100px 40px;
+        padding: 80px 40px 100px 40px;
+        width: 100%;
+        z-index: 10;
       }
 
       .preview-wrapper {
         position: relative;
         width: 100%;
         height: 100%;
-        max-width: 1200px;
+        max-width: 1400px; /* Increased size to use more screen real estate */
+        aspect-ratio: 16/9;
         border-radius: 24px;
-        border: 6px solid var(--surface-white);
-        box-shadow: 0 40px 80px rgba(138, 10, 10, 0.15);
+        border: 8px solid var(--surface-white); /* Thick mirror frame */
+        box-shadow:
+          0 30px 60px rgba(138, 10, 10, 0.15),
+          inset 0 0 0 1px rgba(0, 0, 0, 0.1);
         overflow: hidden;
         background: #000;
       }
@@ -100,7 +165,7 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
-      /* --- 🎛️ In-Screen Overlays (Photobooth Feel) --- */
+      /* --- 🎛️ In-Screen Overlays --- */
       .cam-ui {
         position: absolute;
         top: 30px;
@@ -111,7 +176,7 @@
         pointer-events: none;
         font-family: "VT323", monospace;
         font-size: 32px;
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(255, 255, 255, 0.8);
         text-shadow: 2px 2px 0px #000;
         z-index: 10;
       }
@@ -127,18 +192,9 @@
         background: #ff3b30;
         border-radius: 50%;
         box-shadow: 0 0 10px #ff3b30;
-        animation: blink 1s infinite;
-      }
-      @keyframes blink {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.3;
-        }
       }
 
+      /* The 4-Cut Alignment Grid */
       .composition-grid {
         position: absolute;
         inset: 0;
@@ -158,69 +214,26 @@
         border: 1px dashed rgba(255, 255, 255, 0.4);
       }
 
-      .pose-prompt {
-        position: absolute;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--surface-white);
-        color: var(--action-lead);
-        padding: 12px 30px;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 16px;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        z-index: 10;
-        pointer-events: none;
-        animation: bounce 2s infinite;
-      }
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translate(-50%, 0);
-        }
-        50% {
-          transform: translate(-50%, -10px);
-        }
-      }
-
-      .flash-overlay {
-        position: absolute;
-        inset: 0;
-        background: #fff;
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-      }
-      .flash-overlay.fire {
-        animation: flashAnim 0.5s ease-out;
-      }
-      @keyframes flashAnim {
-        0% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0;
-        }
-      }
-
-      /* --- 🛠️ Toolbar UX --- */
+      /* --- 🛠️ Toolbar --- */
       .toolbar {
         position: fixed;
         bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 12px;
+        gap: 10px;
         padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(15px);
         border-radius: 100px;
-        border: 1px solid var(--surface-white);
+        border: 1px solid rgba(138, 10, 10, 0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         z-index: 200;
         transition:
           transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
           opacity 0.3s ease;
+        flex-wrap: nowrap;
+        white-space: nowrap;
       }
       .fullscreen-mode .toolbar {
         transform: translate(-50%, 150%);
@@ -260,11 +273,6 @@
         background: white;
         color: var(--action-lead);
         box-shadow: 0 0 0 2px var(--action-lead);
-      }
-      .btn-capture {
-        background: #1a1a1a;
-        color: #fff;
-        border: 2px solid #fff;
       }
 
       /* --- Overlays --- */
@@ -308,6 +316,15 @@
         z-index: 10;
         pointer-events: none;
       }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
       .hidden {
         display: none !important;
       }
@@ -328,14 +345,23 @@
     </style>
   </head>
   <body>
+    <!-- Ambient Typography Background (Fills empty white space elegantly) -->
+    <div class="ambient-text ambient-left">FILMONG</div>
+    <div class="ambient-text ambient-right">STUDIO</div>
+
     <div class="brand-header">
       <div class="logo-main">FILMONG</div>
-      <div class="logo-sub">PHOTOBOOTH</div>
+      <div class="logo-sub">LIVE MONITOR</div>
     </div>
 
-    <div class="floating-heart">💖</div>
+    <!-- Live Performance Monitor -->
+    <div class="perf-monitor hidden" id="perfMonitor">
+      <span>RES: <b id="perfRes">0x0</b></span>
+      <span>FPS: <b id="perfFps">0</b></span>
+      <span>CAM: <b id="perfName">None</b></span>
+    </div>
 
-    <!-- 🔑 License / API Activation Overlay -->
+    <!-- 🔑 License Overlay -->
     <div id="licenseOverlay" class="full-overlay">
       <div class="overlay-card">
         <div class="logo-main" style="font-size: 24px; margin-bottom: 5px">
@@ -344,7 +370,6 @@
         <div class="logo-sub" style="margin-bottom: 20px">
           System Activation
         </div>
-
         <input
           type="text"
           id="licenseKey"
@@ -356,7 +381,6 @@
         <button id="activateBtn" onclick="handleActivate()" style="width: 100%">
           Activate System
         </button>
-
         <p
           id="licenseError"
           style="
@@ -377,42 +401,41 @@
       <div class="overlay-card">
         <div class="logo-sub" style="margin-bottom: 20px">Choose Source</div>
         <div style="display: flex; flex-direction: column; gap: 10px">
-          <button onclick="startCamera()">📷 Camera (Webcam)</button>
+          <button onclick="startCamera()">📷 Camera (Capture Card)</button>
           <button onclick="startScreen()">🖥️ Share Screen</button>
         </div>
       </div>
     </div>
 
-    <!-- 📸 Main Viewport -->
+    <!-- 📸 Main Layout -->
     <div class="app-container">
       <div class="preview-wrapper">
         <div class="cam-ui">
           <div class="rec-indicator">
             <div class="rec-dot"></div>
-            REC
+            LIVE PREVIEW
           </div>
           <div id="liveClock">12:00 AM</div>
         </div>
+
+        <!-- Alignment Grid for user posing -->
         <div class="composition-grid" id="gridOverlay">
           <div></div>
           <div></div>
           <div></div>
           <div></div>
         </div>
-        <div class="pose-prompt" id="posePrompt">
-          📸 Ready? Show your best smile!
-        </div>
+
         <video id="preview" autoplay playsinline muted></video>
-        <div class="flash-overlay" id="flashOverlay"></div>
       </div>
     </div>
 
+    <div class="floating-heart">💖</div>
+
     <!-- 🛠️ Toolbar -->
     <div class="toolbar" id="toolbar">
-      <button class="btn-capture" onclick="simulateCapture()">
-        📸 CHỤP MẪU
-      </button>
-      <button id="btnGrid" onclick="toggleGrid()">🔲 Lưới 4 Ô</button>
+      <button id="btnGrid" onclick="toggleGrid()">🔲 Khung Căn Chỉnh</button>
+      <button id="btnPerf" onclick="togglePerf()">📊 Thông Số</button>
       <button id="btnFlipH" onclick="toggleFlipH()">↔️ Ngang</button>
       <button id="btnFlipV" onclick="toggleFlipV()">↕️ Dọc</button>
       <select
@@ -420,13 +443,13 @@
         class="hidden"
         onchange="switchCamera()"
       ></select>
-      <button onclick="changeSource()">🔄 Đổi Nguồn</button>
-      <button onclick="toggleFullscreen()">⛶ Màn Hình</button>
+      <button onclick="changeSource()">🔄 Nguồn</button>
+      <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
 
     <script>
       /* =======================================================
-           1. NEW UI FEATURES LOGIC (Clock, Grid, Capture)
+           1. UI FEATURES LOGIC
            ======================================================= */
       function updateClock() {
         const now = new Date();
@@ -447,25 +470,33 @@
         document.getElementById("btnGrid").classList.toggle("active");
       }
 
-      function simulateCapture() {
-        const flash = document.getElementById("flashOverlay");
-        const prompt = document.getElementById("posePrompt");
-        flash.classList.remove("fire");
-        void flash.offsetWidth;
-        flash.classList.add("fire");
-        const prompts = [
-          "✌️ Peace sign!",
-          "🫶 Make a heart!",
-          "😜 Winking face!",
-          "💅 Slay!",
-          "🐰 Bunny ears!",
-        ];
-        prompt.textContent =
-          prompts[Math.floor(Math.random() * prompts.length)];
+      function togglePerf() {
+        document.getElementById("perfMonitor").classList.toggle("hidden");
+        document.getElementById("btnPerf").classList.toggle("active");
       }
 
       /* =======================================================
-           2. CORE CAMERA LOGIC
+           2. PERFORMANCE MONITORING (Hardware Verification)
+           ======================================================= */
+      let perfInterval = null;
+      function trackPerformance(track) {
+        if (perfInterval) clearInterval(perfInterval);
+        const perfRes = document.getElementById("perfRes");
+        const perfFps = document.getElementById("perfFps");
+        const perfName = document.getElementById("perfName");
+
+        perfName.textContent =
+          track.label.substring(0, 15) + (track.label.length > 15 ? "..." : "");
+
+        perfInterval = setInterval(() => {
+          const settings = track.getSettings();
+          perfRes.textContent = `${settings.width || 0}x${settings.height || 0}`;
+          perfFps.textContent = Math.round(settings.frameRate || 0);
+        }, 1000);
+      }
+
+      /* =======================================================
+           3. CORE CAMERA LOGIC (Capture Card Optimized)
            ======================================================= */
       const preview = document.getElementById("preview");
       const sourceSelector = document.getElementById("sourceSelector");
@@ -497,16 +528,35 @@
           currentStream.getTracks().forEach((t) => t.stop());
           currentStream = null;
         }
+        if (perfInterval) {
+          clearInterval(perfInterval);
+          perfInterval = null;
+        }
+        document.getElementById("perfRes").textContent = "0x0";
+        document.getElementById("perfFps").textContent = "0";
       }
+
+      // Specifically engineered for Fuji X-T2 / Ugreen capture cards to bypass browser compression
+      const optimizedConstraints = {
+        video: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 60 },
+          noiseSuppression: false,
+          autoGainControl: false,
+          echoCancellation: false,
+        },
+        audio: false,
+      };
 
       async function startCamera() {
         stopStream();
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1920, height: 1080 },
-          });
+          const stream =
+            await navigator.mediaDevices.getUserMedia(optimizedConstraints);
           currentStream = stream;
           preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
           sourceSelector.classList.add("hidden");
           await loadCameras();
           cameraSelect.classList.remove("hidden");
@@ -523,6 +573,7 @@
           });
           currentStream = stream;
           preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
           sourceSelector.classList.add("hidden");
         } catch (e) {
           alert("Screen Error: " + e.message);
@@ -543,11 +594,27 @@
 
       async function switchCamera() {
         stopStream();
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: cameraSelect.value } },
-        });
-        currentStream = stream;
-        preview.srcObject = stream;
+        const switchConstraints = {
+          video: {
+            deviceId: { exact: cameraSelect.value },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 },
+            noiseSuppression: false,
+            autoGainControl: false,
+            echoCancellation: false,
+          },
+          audio: false,
+        };
+        try {
+          const stream =
+            await navigator.mediaDevices.getUserMedia(switchConstraints);
+          currentStream = stream;
+          preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
+        } catch (e) {
+          alert("Switch Camera Error: " + e.message);
+        }
       }
 
       function changeSource() {
@@ -561,7 +628,7 @@
         else document.exitFullscreen();
       }
 
-      // Fullscreen Smart Toolbar Hide
+      // Fullscreen Logic
       document.addEventListener("fullscreenchange", () => {
         if (document.fullscreenElement)
           document.body.classList.add("fullscreen-mode");
@@ -578,7 +645,7 @@
       });
 
       /* =======================================================
-           3. RESTORED: FULL SECURE API LICENSE LOGIC
+           4. SECURE API LICENSE LOGIC
            ======================================================= */
       const licenseOverlay = document.getElementById("licenseOverlay");
       const licenseKeyInput = document.getElementById("licenseKey");
@@ -589,7 +656,6 @@
       let licenseInfo = null;
       let trialExpiresAt = null;
 
-      // Crypto Fingerprinting
       async function generateFingerprint() {
         try {
           const canvas = document.createElement("canvas");
@@ -619,17 +685,14 @@
         }
       }
 
-      // Trigger API Activate
       async function handleActivate() {
         const key = licenseKeyInput.value.trim().toUpperCase();
         if (!key.match(/^LIVE-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/)) {
           licenseError.textContent = "Format required: LIVE-XXXX-XXXX-XXXX";
           return;
         }
-
         activateBtn.disabled = true;
         licenseError.textContent = "Activating...";
-
         try {
           const fingerprint = await generateFingerprint();
           const res = await fetch("/api/activate", {
@@ -641,39 +704,31 @@
               userAgent: navigator.userAgent,
             }),
           });
-
           const data = await res.json();
-
           if (!res.ok) {
             licenseError.textContent =
               data.message || data.error || "Activation failed";
             activateBtn.disabled = false;
             return;
           }
-
-          // Success
           licenseInfo = data;
           localStorage.setItem("license_key", key);
           localStorage.setItem("license_fingerprint", fingerprint);
           localStorage.setItem("license_expires", data.expires_at || "null");
           localStorage.setItem("license_activated", Date.now().toString());
-
           licenseOverlay.classList.add("hidden");
           sourceSelector.classList.remove("hidden");
           startLicenseHeartbeat();
         } catch (err) {
-          console.error(err);
           licenseError.textContent = "Network error. Check connection.";
           activateBtn.disabled = false;
         }
       }
 
-      // Validate API (Heartbeat)
       async function validateLicense() {
         const key = localStorage.getItem("license_key");
         const fingerprint = localStorage.getItem("license_fingerprint");
         if (!key || !fingerprint) return false;
-
         try {
           const res = await fetch("/api/validate", {
             method: "POST",
@@ -694,44 +749,40 @@
 
       function checkOfflineGrace() {
         const lastCheck = localStorage.getItem("license_last_check");
-        return lastCheck ? Date.now() < parseInt(lastCheck) + 86400000 : false; // 24 hours
+        return lastCheck ? Date.now() < parseInt(lastCheck) + 86400000 : false;
       }
 
       function updateLicenseStatus() {
-        if (licenseInfo) {
-          licenseStatus.textContent = "✓ SYSTEM ACTIVATED";
-        } else if (trialExpiresAt) {
+        if (licenseInfo) licenseStatus.textContent = "✓ SYSTEM ACTIVATED";
+        else if (trialExpiresAt) {
           const remaining = Math.ceil((trialExpiresAt - Date.now()) / 60000);
-          if (remaining > 0) {
+          if (remaining > 0)
             licenseStatus.textContent = `⏱ Trial mode: ${remaining}m remaining`;
-          } else {
+          else
             licenseStatus.textContent = "⏱ Trial expired. Activation required.";
-          }
         }
       }
 
       function startTrialMode() {
-        trialExpiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+        trialExpiresAt = Date.now() + 10 * 60 * 1000;
         licenseOverlay.classList.add("hidden");
         sourceSelector.classList.remove("hidden");
         updateLicenseStatus();
-
         setInterval(() => {
           updateLicenseStatus();
           if (Date.now() >= trialExpiresAt && !licenseInfo) {
             licenseOverlay.classList.remove("hidden");
             sourceSelector.classList.add("hidden");
-            stopStream(); // Force stop video
+            stopStream();
           }
         }, 60000);
       }
 
       function startLicenseHeartbeat() {
-        setInterval(validateLicense, 5 * 60 * 1000);
+        setInterval(validateLicense, 300000);
         updateLicenseStatus();
       }
 
-      // Intercept Source logic for Trial validation
       const originalStartCamera = window.startCamera;
       window.startCamera = async function () {
         if (!licenseInfo && !trialExpiresAt) startTrialMode();
@@ -760,7 +811,6 @@
         return originalStartScreen();
       };
 
-      // Init App Flow
       async function initLicenseFlow() {
         const savedKey = localStorage.getItem("license_key");
         if (savedKey) {
@@ -775,15 +825,10 @@
             localStorage.removeItem("license_fingerprint");
           }
         }
-        // Defaults to showing License Overlay (which is visible by default in HTML)
       }
-
-      // Run Init
-      if (document.readyState === "loading") {
+      if (document.readyState === "loading")
         document.addEventListener("DOMContentLoaded", initLicenseFlow);
-      } else {
-        initLicenseFlow();
-      }
+      else initLicenseFlow();
     </script>
   </body>
 </html>
