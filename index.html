@@ -40,7 +40,7 @@
         position: relative;
       }
 
-      /* --- 🌀 1. KINETIC TYPOGRAPHY (Scrolling Background) --- */
+      /* --- 🌀 KINETIC TYPOGRAPHY --- */
       .ambient-container {
         position: absolute;
         top: 0;
@@ -67,16 +67,15 @@
         color: rgba(138, 10, 10, 0.04);
         writing-mode: vertical-rl;
         text-orientation: mixed;
-        height: 200vh; /* Double height for smooth looping */
+        height: 200vh;
       }
 
-      /* Hardware accelerated infinite scroll */
       .ambient-left .ambient-track {
         transform: rotate(180deg);
         animation: scrollMarquee 40s linear infinite;
       }
       .ambient-right .ambient-track {
-        animation: scrollMarquee 40s linear infinite reverse;
+        animation: scrollMarqueeRight 40s linear infinite;
       }
 
       @keyframes scrollMarquee {
@@ -85,10 +84,8 @@
         }
         100% {
           transform: translateY(50%) rotate(180deg);
-        } /* Shifts by half its height */
+        }
       }
-
-      /* Overriding rotate for the right side */
       @keyframes scrollMarqueeRight {
         0% {
           transform: translateY(0);
@@ -97,39 +94,75 @@
           transform: translateY(-50%);
         }
       }
-      .ambient-right .ambient-track {
-        animation: scrollMarqueeRight 40s linear infinite;
-      }
 
-      /* --- ✨ Filmong Branding --- */
+      /* --- ✨ UPGRADED FILMONG BRANDING --- */
       .brand-header {
         position: fixed;
         top: 25px;
         left: 50%;
         transform: translateX(-50%);
-        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.5); /* Frosted Glass Base */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        padding: 10px 25px 10px 30px;
+        border-radius: 100px;
+        box-shadow:
+          0 15px 35px rgba(138, 10, 10, 0.08),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.4);
         z-index: 100;
         pointer-events: none;
-        transition: opacity 0.8s ease;
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .fullscreen-mode .brand-header {
-        opacity: 0.15;
-      }
+
       .logo-main {
         font-weight: 900;
-        font-size: 32px;
-        letter-spacing: -1px;
-        color: var(--action-lead);
+        font-size: 28px;
+        letter-spacing: 1px;
+        /* Gradient "Gel" Text Effect */
+        background: linear-gradient(135deg, #8a0a0a 0%, #e94560 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0px 2px 4px rgba(138, 10, 10, 0.2));
         line-height: 1;
       }
+
       .logo-sub {
-        font-weight: 700;
-        font-size: 10px;
-        letter-spacing: 4px;
-        color: var(--text-neutral);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--action-lead);
         text-transform: uppercase;
-        background: var(--surface-primary);
-        padding: 0 10px;
+        background: rgba(138, 10, 10, 0.06);
+        padding: 6px 14px;
+        border-radius: 50px;
+      }
+
+      /* Pulsing "ON AIR" Dot inside the logo */
+      .brand-live-dot {
+        width: 8px;
+        height: 8px;
+        background: #ff3b30;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #ff3b30;
+        animation: pulseBrand 1.5s infinite;
+      }
+      @keyframes pulseBrand {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
+        }
       }
 
       /* --- 📊 Performance Monitor --- */
@@ -165,7 +198,7 @@
         gap: 20px;
       }
 
-      /* --- 📽️ Main Spatial Layout & 🌟 2. BREATHING GLOW --- */
+      /* --- 📽️ Main Spatial Layout & BREATHING GLOW --- */
       .app-container {
         flex: 1;
         display: flex;
@@ -186,7 +219,6 @@
         border: 8px solid var(--surface-white);
         background: #000;
         overflow: hidden;
-        /* The Breathing Animation */
         animation: studioBreathing 4s ease-in-out infinite;
       }
 
@@ -263,7 +295,6 @@
         }
       }
 
-      /* 🌟 4. SMOOTH GRID TRANSITION */
       .composition-grid {
         position: absolute;
         inset: 0;
@@ -274,14 +305,14 @@
         z-index: 5;
       }
       .composition-grid div {
-        border: 1px dashed rgba(255, 255, 255, 0); /* Invisible by default */
-        transition: border-color 0.6s ease; /* Smooth fade in */
+        border: 1px dashed rgba(255, 255, 255, 0);
+        transition: border-color 0.6s ease;
       }
       .composition-grid.visible div {
         border-color: rgba(255, 255, 255, 0.4);
       }
 
-      /* --- 🛠️ Toolbar & 🌟 3. GLASS SHINE HIGHLIGHT --- */
+      /* --- 🛠️ Toolbar --- */
       .toolbar {
         position: fixed;
         bottom: 30px;
@@ -313,7 +344,7 @@
 
       button,
       select {
-        position: relative; /* For shine pseudo-element */
+        position: relative;
         overflow: hidden;
         background: var(--action-lead);
         color: white;
@@ -331,7 +362,6 @@
         justify-content: center;
       }
 
-      /* The Glass Shine Sweep Animation */
       button::after {
         content: "";
         position: absolute;
@@ -350,7 +380,7 @@
       }
       button:hover::after {
         left: 150%;
-      } /* Sweeps across on hover */
+      }
 
       button:hover:not(:disabled) {
         box-shadow: 0 8px 20px rgba(138, 10, 10, 0.3);
@@ -462,7 +492,7 @@
     </style>
   </head>
   <body>
-    <!-- 🌀 Kinetic Typography Background (Infinite Scroll) -->
+    <!-- 🌀 Kinetic Typography Background -->
     <div class="ambient-container ambient-left">
       <div class="ambient-track">
         <span>FILMONG STUDIO FILMONG STUDIO FILMONG STUDIO</span>
@@ -474,10 +504,13 @@
       </div>
     </div>
 
-    <!-- ✨ Header -->
+    <!-- ✨ THE PREMIUM BRAND HEADER -->
     <div class="brand-header">
       <div class="logo-main">FILMONG</div>
-      <div class="logo-sub">LIVE MONITOR</div>
+      <div class="logo-sub">
+        <div class="brand-live-dot"></div>
+        LIVE MONITOR
+      </div>
     </div>
 
     <!-- 📊 Performance Monitor -->
@@ -493,7 +526,10 @@
         <div class="logo-main" style="font-size: 24px; margin-bottom: 5px">
           FILMONG
         </div>
-        <div class="logo-sub" style="margin-bottom: 20px">
+        <div
+          class="logo-sub"
+          style="margin-bottom: 20px; justify-content: center; background: none"
+        >
           System Activation
         </div>
         <input
@@ -525,7 +561,12 @@
     <!-- 📽️ Source Selector -->
     <div id="sourceSelector" class="full-overlay hidden">
       <div class="overlay-card">
-        <div class="logo-sub" style="margin-bottom: 20px">Choose Source</div>
+        <div
+          class="logo-sub"
+          style="margin-bottom: 20px; justify-content: center; background: none"
+        >
+          Choose Source
+        </div>
         <div style="display: flex; flex-direction: column; gap: 10px">
           <button onclick="startCamera()">📷 Camera (Capture Card)</button>
           <button onclick="startScreen()">🖥️ Share Screen</button>
@@ -535,7 +576,6 @@
 
     <!-- 📸 Main Layout -->
     <div class="app-container">
-      <!-- 🌟 Breathing Wrapper -->
       <div class="preview-wrapper">
         <div class="cam-ui">
           <div class="rec-indicator">
@@ -545,7 +585,6 @@
           <div id="liveClock">12:00 AM</div>
         </div>
 
-        <!-- 🌟 Smooth Transition Grid -->
         <div class="composition-grid" id="gridOverlay">
           <div></div>
           <div></div>
@@ -603,7 +642,7 @@
       }
 
       /* =======================================================
-           2. PERFORMANCE MONITORING (Hardware Verification)
+           2. PERFORMANCE MONITORING
            ======================================================= */
       let perfInterval = null;
       function trackPerformance(track) {
@@ -623,7 +662,7 @@
       }
 
       /* =======================================================
-           3. CORE CAMERA LOGIC (Capture Card Optimized)
+           3. CORE CAMERA LOGIC
            ======================================================= */
       const preview = document.getElementById("preview");
       const sourceSelector = document.getElementById("sourceSelector");
@@ -683,7 +722,7 @@
           currentStream = stream;
           preview.srcObject = stream;
           trackPerformance(stream.getVideoTracks()[0]);
-          document.getElementById("sourceSelector").classList.add("hidden"); // Fixed transition compatibility
+          document.getElementById("sourceSelector").classList.add("hidden");
           await loadCameras();
           cameraSelect.classList.remove("hidden");
         } catch (e) {
@@ -754,7 +793,6 @@
         else document.exitFullscreen();
       }
 
-      // Fullscreen Logic
       document.addEventListener("fullscreenchange", () => {
         if (document.fullscreenElement)
           document.body.classList.add("fullscreen-mode");
