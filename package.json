@@ -1,0 +1,17 @@
+{
+  "name": "live-preview-license",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Live preview app with Vercel KV-based license management",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "env:pull": "vercel env pull .env.local"
+  },
+  "devDependencies": {
+    "@upstash/redis": "^1.25.0",
+    "@vercel/edge-config": "^0.2.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
