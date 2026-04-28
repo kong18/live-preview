@@ -1,7 +1,12 @@
-const { kv } = require('../_lib/kv');
-const { generateKey, hashKey, calculateExpiry, hashIP, truncateFingerprint } =
-  require('../_lib/license-utils');
-const { requireAuth } = require('../_lib/admin-auth');
+const { kv } = require("../_lib/kv");
+const {
+  generateKey,
+  hashKey,
+  calculateExpiry,
+  hashIP,
+  truncateFingerprint,
+} = require("../_lib/license-utils");
+const { requireAuth } = require("../_lib/admin-auth");
 
 /**
  * GET /api/admin/keys
@@ -19,11 +24,11 @@ const { requireAuth } = require('../_lib/admin-auth');
  *   { keys: string[], plan: string, expiresAt: number|null }
  */
 module.exports = async function adminKeysHandler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
@@ -31,12 +36,12 @@ module.exports = async function adminKeysHandler(req, res) {
   const auth = await requireAuth(req, res);
   if (!auth) return; // Error already sent by requireAuth
 
-  if (req.method === 'GET') {
+  if (req.method === "GET") {
     return handleListKeys(req, res);
-  } else if (req.method === 'POST') {
+  } else if (req.method === "POST") {
     return handleCreateKeys(req, res);
   } else {
-    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
   }
 };
 
@@ -44,12 +49,14 @@ module.exports = async function adminKeysHandler(req, res) {
  * List all licenses
  */
 async function handleListKeys(req, res) {
-  const page = Number.parseInt(req.query.page || '1', 10);
-  const pageSize = Number.parseInt(req.query.pageSize || '20', 10);
+  const page = Number.parseInt(req.query.page || "1", 10);
+  const pageSize = Number.parseInt(req.query.pageSize || "20", 10);
 
   try {
     // Get all license hashes from sorted set
-    const allHashes = await kv.zrange('licenses:all', 0, -1, { withScores: true });
+    const allHashes = await kv.zrange("licenses:all", 0, -1, {
+      withScores: true,
+    });
 
     const total = allHashes.length / 2; // withScores returns [member, score, member, score, ...]
     const start = (page - 1) * pageSize;
@@ -61,13 +68,21 @@ async function handleListKeys(req, res) {
       const license = await kv.hgetall(`license:${hash}`);
       if (license && Object.keys(license).length > 0) {
         paginated.push({
-          hashRaw: hash,
-          hash: hash.slice(0, 16) + '...',
+          // ✅ Full 64-char hash for API calls (revoke, validate, etc.)
+          key_hash: hash,
+
+          // ✅ Truncated hash for UI display only
+          hash: `${hash.slice(0, 8)}...${hash.slice(-8)}`,
+
           plan: license.plan,
-          revoked: license.revoked === 'true',
-          bound_fingerprint: license.bound_fingerprint ? 'bound' : 'unbound',
+          revoked: license.revoked === "true",
+          bound_fingerprint: license.bound_fingerprint ? "bound" : "unbound",
           created_at: license.created_at,
           expires_at: license.expires_at,
+
+          // Optional: helpful metadata
+          activated: !!license.activated_at,
+          last_seen: license.last_seen,
         });
       }
     }
@@ -82,10 +97,10 @@ async function handleListKeys(req, res) {
       },
     });
   } catch (err) {
-    console.error('List keys error:', err);
+    console.error("List keys error:", err);
     return res.status(500).json({
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to list licenses',
+      error: "INTERNAL_ERROR",
+      message: "Failed to list licenses",
     });
   }
 }
@@ -94,21 +109,21 @@ async function handleListKeys(req, res) {
  * Create new license keys
  */
 async function handleCreateKeys(req, res) {
-  const { quantity = 1, plan = '30d' } = req.body;
+  const { quantity = 1, plan = "30d" } = req.body;
 
   // Validate
   if (!quantity || quantity < 1 || quantity > 1000) {
     return res.status(400).json({
-      error: 'INVALID_QUANTITY',
-      message: 'quantity must be between 1 and 1000',
+      error: "INVALID_QUANTITY",
+      message: "quantity must be between 1 and 1000",
     });
   }
 
-  const validPlans = ['30d', '90d', '365d', 'perpetual'];
+  const validPlans = ["30d", "90d", "365d", "perpetual"];
   if (!validPlans.includes(plan)) {
     return res.status(400).json({
-      error: 'INVALID_PLAN',
-      message: `plan must be one of: ${validPlans.join(', ')}`,
+      error: "INVALID_PLAN",
+      message: `plan must be one of: ${validPlans.join(", ")}`,
     });
   }
 
@@ -118,21 +133,21 @@ async function handleCreateKeys(req, res) {
     const now = Date.now();
 
     for (let i = 0; i < quantity; i++) {
-      const plainKey = generateKey('LIVE');
+      const plainKey = generateKey("LIVE");
       const hashedKey = hashKey(plainKey);
       const licenseKey = `license:${hashedKey}`;
 
       // Store license in KV
       await kv.hmset(licenseKey, {
-        prefix: 'LIVE',
+        prefix: "LIVE",
         plan,
-        expires_at: expiresAt ? expiresAt.toString() : 'null',
-        revoked: 'false',
+        expires_at: expiresAt ? expiresAt.toString() : "null",
+        revoked: "false",
         created_at: now.toString(),
       });
 
       // Add to licenses:all sorted set (score = creation timestamp)
-      await kv.zadd('licenses:all', { score: now, member: hashedKey });
+      await kv.zadd("licenses:all", { score: now, member: hashedKey });
 
       // Store plain key only in response (shown only once to admin)
       createdKeys.push(plainKey);
@@ -140,14 +155,14 @@ async function handleCreateKeys(req, res) {
 
     // Log creation event
     const auditEntry = JSON.stringify({
-      event: 'keys_created',
+      event: "keys_created",
       quantity,
       plan,
-      by: req.headers.authorization?.split(' ')[1]?.slice(0, 8) || 'unknown',
+      by: req.headers.authorization?.split(" ")[1]?.slice(0, 8) || "unknown",
       ts: now,
     });
-    await kv.lpush('audit:admin', auditEntry);
-    await kv.ltrim('audit:admin', 0, 999);
+    await kv.lpush("audit:admin", auditEntry);
+    await kv.ltrim("audit:admin", 0, 999);
 
     return res.status(201).json({
       success: true,
@@ -155,13 +170,13 @@ async function handleCreateKeys(req, res) {
       plan,
       expires_at: expiresAt,
       keys: createdKeys,
-      message: 'Save these keys! They will not be shown again.',
+      message: "Save these keys! They will not be shown again.",
     });
   } catch (err) {
-    console.error('Create keys error:', err);
+    console.error("Create keys error:", err);
     return res.status(500).json({
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to create keys',
+      error: "INTERNAL_ERROR",
+      message: "Failed to create keys",
     });
   }
 }
