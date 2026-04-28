@@ -75,7 +75,8 @@ async function handleListKeys(req, res) {
           hash: `${hash.slice(0, 8)}...${hash.slice(-8)}`,
 
           plan: license.plan,
-          revoked: license.revoked === "true",
+          // ✅ Always ensure revoked is boolean (handle both "true"/"false" strings and missing values)
+          revoked: license.revoked === "true" || license.revoked === true,
           bound_fingerprint: license.bound_fingerprint ? "bound" : "unbound",
           created_at: license.created_at,
           expires_at: license.expires_at,

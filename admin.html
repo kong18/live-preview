@@ -740,11 +740,13 @@
       }
 
       function statusBadge(license) {
-        if (license.revoked)
-          return '<span class="badge badge-bad">Revoked</span>';
+        // Explicitly check for revoked status (can be boolean true or string "true")
+        if (license.revoked === true || license.revoked === "true") {
+          return '<span class="badge badge-bad">⊘ Revoked</span>';
+        }
         if (license.bound_fingerprint === "bound")
-          return '<span class="badge badge-ok">Bound</span>';
-        return '<span class="badge badge-warn">Unbound</span>';
+          return '<span class="badge badge-ok">✓ Bound</span>';
+        return '<span class="badge badge-warn">⊙ Unbound</span>';
       }
 
       function renderCreatedKeys() {
@@ -807,6 +809,9 @@
             const displayHash = fullHash
               ? `${fullHash.slice(0, 8)}...${fullHash.slice(-8)}`
               : license.hash || "unknown";
+            
+            // Check if already revoked
+            const isRevoked = license.revoked === true || license.revoked === "true";
 
             return `
         <tr>
@@ -823,7 +828,9 @@
           <td>${formatDate(license.expires_at)}</td>
           <td>
             <div class="table-actions">
-              <button class="btn-danger" data-revoke-hash="${fullHash}" ${!fullHash ? "disabled" : ""}>Revoke</button>
+              <button class="btn-danger" data-revoke-hash="${fullHash}" ${!fullHash || isRevoked ? "disabled" : ""} title="${isRevoked ? "Already revoked" : "Revoke this license"}">
+                ${isRevoked ? "Revoked" : "Revoke"}
+              </button>
             </div>
           </td>
         </tr>
@@ -884,10 +891,13 @@
             throw new Error(data.message || data.error || "Load failed");
           }
 
+          // Ensure all license fields are properly mapped
           state.licenses = (data.licenses || []).map((item) => ({
             ...item,
             key_hash: item.key_hash || item.hash,
             display_hash: item.hash,
+            // Explicitly ensure revoked is a boolean
+            revoked: item.revoked === true || item.revoked === "true",
           }));
           state.pagination = data.pagination || state.pagination;
           renderLicenses();
@@ -976,7 +986,13 @@
             throw new Error(data.message || data.error || "Revoke failed");
           }
 
-          setAlert(el.keyAlert, "success", "Đã revoke license.");
+          setAlert(el.keyAlert, "success", "Đã revoke license. Đang tải lại danh sách...");
+          console.log("License revoked successfully:", hash.slice(0, 8) + "...");
+          
+          // Wait a moment to ensure backend has persisted the change
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Refresh the list to show updated status
           await refreshLicenses();
         } catch (error) {
           setAlert(
@@ -984,6 +1000,7 @@
             "error",
             error.message || "Không revoke được key.",
           );
+          console.error("Revoke error:", error);
         }
       }
 

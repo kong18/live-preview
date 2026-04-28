@@ -61,7 +61,8 @@ async function handleGetStatus(hash, res) {
     return res.status(200).json({
       hash: hash.slice(0, 16) + "...",
       plan: license.plan,
-      revoked: license.revoked === "true",
+      // ✅ Ensure revoked is always boolean
+      revoked: license.revoked === "true" || license.revoked === true,
       bound_fingerprint: license.bound_fingerprint || null,
       activated_at: license.activated_at,
       created_at: license.created_at,
