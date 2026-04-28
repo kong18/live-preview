@@ -18,7 +18,7 @@ const { requireAuth } = require('../../_lib/admin-auth');
  * Response:
  *   { keys: string[], plan: string, expiresAt: number|null }
  */
-module.exports = async (req, res) => {
+module.exports = async function adminKeysHandler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -44,8 +44,8 @@ module.exports = async (req, res) => {
  * List all licenses
  */
 async function handleListKeys(req, res) {
-  const page = parseInt(req.query.page || '1', 10);
-  const pageSize = parseInt(req.query.pageSize || '20', 10);
+  const page = Number.parseInt(req.query.page || '1', 10);
+  const pageSize = Number.parseInt(req.query.pageSize || '20', 10);
 
   try {
     // Get all license hashes from sorted set
@@ -61,6 +61,7 @@ async function handleListKeys(req, res) {
       const license = await kv.hgetall(`license:${hash}`);
       if (license && Object.keys(license).length > 0) {
         paginated.push({
+          hashRaw: hash,
           hash: hash.slice(0, 16) + '...',
           plan: license.plan,
           revoked: license.revoked === 'true',

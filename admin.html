@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Live Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: rgba(12, 20, 34, 0.92);
+      --panel-2: rgba(18, 29, 48, 0.96);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #e7eefc;
+      --muted: #98a6c2;
+      --accent: #f15b6c;
+      --accent-2: #6fa8ff;
+      --success: #67d39b;
+      --danger: #ff6b6b;
+      --warning: #f6c76e;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --space-1: 0.5rem;
+      --space-2: 0.75rem;
+      --space-3: 1rem;
+      --space-4: 1.5rem;
+      --space-5: 2rem;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(111, 168, 255, 0.15), transparent 30%),
+        radial-gradient(circle at top right, rgba(241, 91, 108, 0.12), transparent 28%),
+        linear-gradient(180deg, #060b14 0%, #081120 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding: 28px;
+    }
+
+    .shell {
+      max-width: 1220px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero {
+      background: linear-gradient(180deg, rgba(18, 29, 48, 0.96), rgba(12, 20, 34, 0.92));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.05;
+    }
+
+    .lead {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 780px;
+      line-height: 1.6;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 0 4px rgba(246, 199, 110, 0.12);
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 360px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 20px 0;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .card-subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-body {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 13px;
+      color: #c9d4ea;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      background: rgba(8, 14, 26, 0.9);
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: rgba(111, 168, 255, 0.8);
+      box-shadow: 0 0 0 4px rgba(111, 168, 255, 0.12);
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #b73a4b, #7a1425);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(52, 20, 26, 0.98);
+      color: #ffe7e7;
+      border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+
+    .alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .alert.show { display: block; }
+    .alert.success {
+      background: rgba(18, 52, 36, 0.98);
+      color: #edfff5;
+      border-color: rgba(103, 211, 155, 0.22);
+    }
+    .alert.error {
+      background: rgba(54, 23, 27, 0.98);
+      color: #fff0f0;
+      border-color: rgba(255, 107, 107, 0.22);
+    }
+    .alert.info {
+      background: rgba(20, 43, 69, 0.98);
+      color: #eef5ff;
+      border-color: rgba(111, 168, 255, 0.22);
+    }
+
+    .hidden { display: none !important; }
+
+    .section-title {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .panel {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar .meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+    }
+
+    th {
+      color: #edf3ff;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(0, 0, 0, 0.32);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .muted { color: var(--muted); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge-ok {
+      background: rgba(18, 52, 36, 0.98);
+      color: #edfff5;
+      border-color: rgba(103, 211, 155, 0.22);
+    }
+
+    .badge-bad {
+      background: rgba(54, 23, 27, 0.98);
+      color: #fff0f0;
+      border-color: rgba(255, 107, 107, 0.22);
+    }
+
+    .badge-warn {
+      background: rgba(59, 45, 17, 0.98);
+      color: #fff3d1;
+      border-color: rgba(246, 199, 110, 0.22);
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .key-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.18);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .key-box code {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty {
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1024px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 14px; }
+      .hero, .card-body { padding: 18px; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">Live Preview Admin</div>
+          <h1>License Dashboard</h1>
+          <p class="lead">
+            Login để tạo key, xem danh sách license, revoke key, và copy key chỉ được hiển thị một lần.
+          </p>
+        </div>
+        <div class="status-pill" id="sessionState">
+          <span class="status-dot" id="sessionDot"></span>
+          <span id="sessionText">Chưa đăng nhập</span>
+        </div>
+      </div>
+      <div class="small">
+        API dùng: <strong>/api/admin/auth</strong>, <strong>/api/admin/keys</strong>, <strong>/api/admin/keys/[hash]</strong>
+      </div>
+    </section>
+
+    <section class="grid">
+      <aside class="card">
+        <div class="card-header">
+          <h2 class="card-title">Admin Login</h2>
+          <p class="card-subtitle">Đăng nhập bằng email + password đã lưu trong Edge Config.</p>
+        </div>
+        <div class="card-body">
+          <div id="authAlert" class="alert"></div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" autocomplete="username" placeholder="admin@yourdomain.com" />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+          </div>
+          <div class="actions">
+            <button class="btn-primary" id="loginBtn">Login</button>
+            <button class="btn-ghost" id="logoutBtn" type="button">Logout</button>
+          </div>
+          <p class="small">
+            Nếu login lỗi, kiểm tra <code>admin_credentials</code> trong Edge Config và <code>ADMIN_JWT_SECRET</code> trên Vercel.
+          </p>
+        </div>
+      </aside>
+
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Create License Keys</h2>
+          <p class="card-subtitle">Tạo key mới, sau đó copy ngay vì plain key chỉ trả về một lần.</p>
+        </div>
+        <div class="card-body">
+          <div id="keyAlert" class="alert"></div>
+          <div class="row">
+            <div class="field">
+              <label for="quantity">Quantity</label>
+              <input id="quantity" type="number" min="1" max="1000" value="1" />
+            </div>
+            <div class="field">
+              <label for="plan">Plan</label>
+              <select id="plan">
+                <option value="30d">30 days</option>
+                <option value="90d">90 days</option>
+                <option value="365d">365 days</option>
+                <option value="perpetual">Perpetual</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn-primary" id="createBtn">Create Keys</button>
+            <button class="btn-secondary" id="refreshBtn" type="button">Refresh List</button>
+          </div>
+          <div id="createdKeysWrap" class="hidden">
+            <h3 class="section-title">New Keys</h3>
+            <div id="createdKeysList" class="actions" style="flex-direction: column;"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2 class="section-title">License List</h2>
+          <div class="meta" id="listMeta">Chưa tải dữ liệu</div>
+        </div>
+        <div class="actions">
+          <button class="btn-ghost" id="exportBtn" type="button">Export CSV (manual)</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Key Hash</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Binding</th>
+              <th>Created</th>
+              <th>Expires</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="licenseRows">
+            <tr>
+              <td colspan="7">
+                <div class="empty">Chưa có dữ liệu. Hãy login rồi bấm <strong>Refresh List</strong> hoặc <strong>Create Keys</strong>.</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      token: localStorage.getItem('admin_token') || '',
+      email: localStorage.getItem('admin_email') || '',
+      createdKeys: [],
+      licenses: [],
+      pagination: { page: 1, pageSize: 20, total: 0, pages: 0 },
+    };
+
+    const el = {
+      sessionDot: document.getElementById('sessionDot'),
+      sessionText: document.getElementById('sessionText'),
+      authAlert: document.getElementById('authAlert'),
+      keyAlert: document.getElementById('keyAlert'),
+      email: document.getElementById('email'),
+      password: document.getElementById('password'),
+      loginBtn: document.getElementById('loginBtn'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      quantity: document.getElementById('quantity'),
+      plan: document.getElementById('plan'),
+      createBtn: document.getElementById('createBtn'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      listMeta: document.getElementById('listMeta'),
+      licenseRows: document.getElementById('licenseRows'),
+      createdKeysWrap: document.getElementById('createdKeysWrap'),
+      createdKeysList: document.getElementById('createdKeysList'),
+    };
+
+    function setAlert(node, type, message) {
+      node.className = `alert show ${type}`;
+      node.textContent = message;
+    }
+
+    function clearAlert(node) {
+      node.className = 'alert';
+      node.textContent = '';
+    }
+
+    function updateSessionUI() {
+      if (state.token) {
+        el.sessionDot.style.background = 'var(--success)';
+        el.sessionDot.style.boxShadow = '0 0 0 4px rgba(103, 211, 155, 0.12)';
+        const emailSuffix = state.email ? ` · ${state.email}` : '';
+        el.sessionText.textContent = `Đã đăng nhập${emailSuffix}`;
+      } else {
+        el.sessionDot.style.background = 'var(--warning)';
+        el.sessionDot.style.boxShadow = '0 0 0 4px rgba(246, 199, 110, 0.12)';
+        el.sessionText.textContent = 'Chưa đăng nhập';
+      }
+    }
+
+    function authHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.token}`,
+      };
+    }
+
+    async function login() {
+      clearAlert(el.authAlert);
+      const email = el.email.value.trim();
+      const password = el.password.value;
+
+      if (!email || !password) {
+        setAlert(el.authAlert, 'error', 'Nhập email và password trước khi login.');
+        return;
+      }
+
+      el.loginBtn.disabled = true;
+      el.loginBtn.textContent = 'Logging in...';
+
+      try {
+        const res = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Login failed');
+        }
+
+        state.token = data.token;
+        state.email = data.email;
+        localStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_email', data.email);
+        updateSessionUI();
+        setAlert(el.authAlert, 'success', 'Đăng nhập thành công. Bạn có thể tạo key ngay.');
+      } catch (error) {
+        state.token = '';
+        state.email = '';
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_email');
+        updateSessionUI();
+        setAlert(el.authAlert, 'error', error.message || 'Login failed');
+      } finally {
+        el.loginBtn.disabled = false;
+        el.loginBtn.textContent = 'Login';
+      }
+    }
+
+    function logout() {
+      state.token = '';
+      state.email = '';
+      state.licenses = [];
+      state.createdKeys = [];
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_email');
+      updateSessionUI();
+      renderLicenses();
+      renderCreatedKeys();
+      setAlert(el.authAlert, 'info', 'Đã logout.');
+    }
+
+    function formatDate(value) {
+      if (!value || value === 'null') return '—';
+      const ms = Number(value);
+      if (Number.isNaN(ms)) return value;
+      return new Intl.DateTimeFormat('vi-VN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(ms);
+    }
+
+    function statusBadge(license) {
+      if (license.revoked) return '<span class="badge badge-bad">Revoked</span>';
+      if (license.bound_fingerprint === 'bound') return '<span class="badge badge-ok">Bound</span>';
+      return '<span class="badge badge-warn">Unbound</span>';
+    }
+
+    function renderCreatedKeys() {
+      if (!state.createdKeys.length) {
+        el.createdKeysWrap.classList.add('hidden');
+        el.createdKeysList.innerHTML = '';
+        return;
+      }
+
+      el.createdKeysWrap.classList.remove('hidden');
+      el.createdKeysList.innerHTML = state.createdKeys.map((key) => `
+        <div class="key-box">
+          <code>${key}</code>
+          <button class="btn-secondary" data-copy-key="${key}">Copy</button>
+        </div>
+      `).join('');
+
+      el.createdKeysList.querySelectorAll('[data-copy-key]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const key = button.dataset.copyKey;
+          try {
+            await navigator.clipboard.writeText(key);
+            button.textContent = 'Copied';
+            setTimeout(() => {
+              button.textContent = 'Copy';
+            }, 1200);
+          } catch {
+            setAlert(el.keyAlert, 'error', 'Không thể copy tự động. Hãy copy thủ công.');
+          }
+        });
+      });
+    }
+
+    function renderLicenses() {
+      if (!state.licenses.length) {
+        el.licenseRows.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty">Chưa có license nào. Hãy tạo key đầu tiên.</div>
+            </td>
+          </tr>
+        `;
+        el.listMeta.textContent = '0 license';
+        return;
+      }
+
+      el.licenseRows.innerHTML = state.licenses.map((license) => {
+        const keyHash = license.hashRaw || license.hash.replace(/\.\.\.$/, '');
+
+        return `
+        <tr>
+          <td>
+            <div class="key-box" style="margin:0;">
+              <code>${license.hash}</code>
+              <button class="btn-ghost" data-copy-hash="${keyHash}">Copy</button>
+            </div>
+          </td>
+          <td>${license.plan || '—'}</td>
+          <td>${statusBadge(license)}</td>
+          <td class="muted">${license.bound_fingerprint || 'unbound'}</td>
+          <td>${formatDate(license.created_at)}</td>
+          <td>${formatDate(license.expires_at)}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn-danger" data-revoke-hash="${keyHash}">Revoke</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      }).join('');
+
+      el.licenseRows.querySelectorAll('[data-copy-hash]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const hash = button.dataset.copyHash;
+          try {
+            await navigator.clipboard.writeText(hash);
+            button.textContent = 'Copied';
+            setTimeout(() => (button.textContent = 'Copy'), 1200);
+          } catch {
+            setAlert(el.keyAlert, 'error', 'Không thể copy hash.');
+          }
+        });
+      });
+
+      el.licenseRows.querySelectorAll('[data-revoke-hash]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const hash = button.dataset.revokeHash;
+          if (!hash) return;
+          if (!confirm('Revoke license này?')) return;
+          await revokeLicense(hash);
+        });
+      });
+
+      el.listMeta.textContent = `${state.pagination.total} license · trang ${state.pagination.page}/${state.pagination.pages || 1}`;
+    }
+
+    async function refreshLicenses() {
+      clearAlert(el.keyAlert);
+      if (!state.token) {
+        setAlert(el.keyAlert, 'info', 'Hãy login trước để xem danh sách license.');
+        return;
+      }
+
+      el.refreshBtn.disabled = true;
+      el.refreshBtn.textContent = 'Refreshing...';
+
+      try {
+        const res = await fetch('/api/admin/keys?page=1&pageSize=20', {
+          headers: authHeaders(),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Load failed');
+        }
+
+        state.licenses = (data.licenses || []).map((item) => ({
+          ...item,
+          hashRaw: item.hash ? item.hash.replace(/\.\.\.$/, '') : '',
+        }));
+        state.pagination = data.pagination || state.pagination;
+        renderLicenses();
+        setAlert(el.keyAlert, 'success', 'Đã tải danh sách license.');
+      } catch (error) {
+        setAlert(el.keyAlert, 'error', error.message || 'Không tải được danh sách license.');
+      } finally {
+        el.refreshBtn.disabled = false;
+        el.refreshBtn.textContent = 'Refresh List';
+      }
+    }
+
+    async function createKeys() {
+      clearAlert(el.keyAlert);
+      if (!state.token) {
+        setAlert(el.keyAlert, 'info', 'Login trước rồi hãy tạo key.');
+        return;
+      }
+
+      const quantity = Number(el.quantity.value || 1);
+      const plan = el.plan.value;
+
+      el.createBtn.disabled = true;
+      el.createBtn.textContent = 'Creating...';
+      state.createdKeys = [];
+      renderCreatedKeys();
+
+      try {
+        const res = await fetch('/api/admin/keys', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ quantity, plan }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Create failed');
+        }
+
+        state.createdKeys = data.keys || [];
+        renderCreatedKeys();
+        setAlert(el.keyAlert, 'success', `Đã tạo ${state.createdKeys.length} key cho plan ${plan}.`);
+        await refreshLicenses();
+      } catch (error) {
+        setAlert(el.keyAlert, 'error', error.message || 'Không tạo được key.');
+      } finally {
+        el.createBtn.disabled = false;
+        el.createBtn.textContent = 'Create Keys';
+      }
+    }
+
+    async function revokeLicense(hash) {
+      if (!state.token) return;
+
+      try {
+        const res = await fetch(`/api/admin/keys/${hash}`, {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ revoked: true }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || data.error || 'Revoke failed');
+        }
+
+        setAlert(el.keyAlert, 'success', 'Đã revoke license.');
+        await refreshLicenses();
+      } catch (error) {
+        setAlert(el.keyAlert, 'error', error.message || 'Không revoke được key.');
+      }
+    }
+
+    function exportCsv() {
+      const rows = [
+        ['hash', 'plan', 'revoked', 'bound_fingerprint', 'created_at', 'expires_at'],
+        ...state.licenses.map((license) => [
+          license.hash,
+          license.plan,
+          license.revoked ? 'true' : 'false',
+          license.bound_fingerprint || '',
+          license.created_at || '',
+          license.expires_at || '',
+        ]),
+      ];
+
+      const csv = rows
+        .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'licenses.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    el.loginBtn.addEventListener('click', login);
+    el.logoutBtn.addEventListener('click', logout);
+    el.createBtn.addEventListener('click', createKeys);
+    el.refreshBtn.addEventListener('click', refreshLicenses);
+    el.exportBtn.addEventListener('click', exportCsv);
+
+    [el.password, el.email].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') login();
+      });
+    });
+
+    updateSessionUI();
+    if (state.token) {
+      refreshLicenses();
+    }
+  </script>
+</body>
+</html>
