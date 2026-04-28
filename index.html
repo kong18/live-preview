@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Filmong Live Preview</title>
+    <title>Filmong Live Preview Pro</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=VT323&display=swap"
       rel="stylesheet"
@@ -12,6 +12,7 @@
       :root {
         --surface-primary: #f3d8e6;
         --action-lead: #8a0a0a;
+        --action-glow: rgba(138, 10, 10, 0.4);
         --surface-white: #ffffff;
         --text-neutral: #1a1a1a;
       }
@@ -24,14 +25,12 @@
       }
 
       body {
-        /* Y2K Dot Grid Pattern */
         background-color: var(--surface-primary);
         background-image: radial-gradient(
-          rgba(138, 10, 10, 0.06) 2px,
+          rgba(138, 10, 10, 0.08) 2px,
           transparent 2px
         );
         background-size: 30px 30px;
-
         color: var(--text-neutral);
         font-family: "Montserrat", sans-serif;
         overflow: hidden;
@@ -41,28 +40,65 @@
         position: relative;
       }
 
-      /* --- 🎨 NEW: Ambient Space-Filling Typography --- */
-      /* These huge vertical texts fill the left/right whitespace beautifully without adding clutter */
-      .ambient-text {
+      /* --- 🌀 1. KINETIC TYPOGRAPHY (Scrolling Background) --- */
+      .ambient-container {
         position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 15vw;
-        font-weight: 900;
-        color: rgba(138, 10, 10, 0.03); /* Extremely subtle */
-        pointer-events: none;
+        top: 0;
+        bottom: 0;
+        width: 12vw;
+        overflow: hidden;
         z-index: 0;
-        white-space: nowrap;
+        pointer-events: none;
         user-select: none;
       }
       .ambient-left {
-        left: -5vw;
-        writing-mode: vertical-rl;
-        transform: translateY(-50%) rotate(180deg);
+        left: 0;
       }
       .ambient-right {
-        right: -5vw;
+        right: 0;
+      }
+
+      .ambient-track {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        font-size: 15vw;
+        font-weight: 900;
+        color: rgba(138, 10, 10, 0.04);
         writing-mode: vertical-rl;
+        text-orientation: mixed;
+        height: 200vh; /* Double height for smooth looping */
+      }
+
+      /* Hardware accelerated infinite scroll */
+      .ambient-left .ambient-track {
+        transform: rotate(180deg);
+        animation: scrollMarquee 40s linear infinite;
+      }
+      .ambient-right .ambient-track {
+        animation: scrollMarquee 40s linear infinite reverse;
+      }
+
+      @keyframes scrollMarquee {
+        0% {
+          transform: translateY(0) rotate(180deg);
+        }
+        100% {
+          transform: translateY(50%) rotate(180deg);
+        } /* Shifts by half its height */
+      }
+
+      /* Overriding rotate for the right side */
+      @keyframes scrollMarqueeRight {
+        0% {
+          transform: translateY(0);
+        }
+        100% {
+          transform: translateY(-50%);
+        }
+      }
+      .ambient-right .ambient-track {
+        animation: scrollMarqueeRight 40s linear infinite;
       }
 
       /* --- ✨ Filmong Branding --- */
@@ -74,11 +110,11 @@
         text-align: center;
         z-index: 100;
         pointer-events: none;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.8s ease;
       }
       .fullscreen-mode .brand-header {
-        opacity: 0.2;
-      } /* Fades out during full immersion */
+        opacity: 0.15;
+      }
       .logo-main {
         font-weight: 900;
         font-size: 32px;
@@ -115,7 +151,13 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
-        transition: opacity 0.2s ease;
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+      }
+      .perf-monitor.hidden {
+        opacity: 0;
+        transform: translateY(-10px);
       }
       .perf-monitor span {
         display: flex;
@@ -123,7 +165,7 @@
         gap: 20px;
       }
 
-      /* --- 📽️ Main Spatial Layout --- */
+      /* --- 📽️ Main Spatial Layout & 🌟 2. BREATHING GLOW --- */
       .app-container {
         flex: 1;
         display: flex;
@@ -138,15 +180,30 @@
         position: relative;
         width: 100%;
         height: 100%;
-        max-width: 1400px; /* Increased size to use more screen real estate */
+        max-width: 1400px;
         aspect-ratio: 16/9;
         border-radius: 24px;
-        border: 8px solid var(--surface-white); /* Thick mirror frame */
-        box-shadow:
-          0 30px 60px rgba(138, 10, 10, 0.15),
-          inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
+        border: 8px solid var(--surface-white);
         background: #000;
+        overflow: hidden;
+        /* The Breathing Animation */
+        animation: studioBreathing 4s ease-in-out infinite;
+      }
+
+      @keyframes studioBreathing {
+        0%,
+        100% {
+          box-shadow:
+            0 20px 50px rgba(138, 10, 10, 0.1),
+            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+            0 0 0px var(--action-glow);
+        }
+        50% {
+          box-shadow:
+            0 30px 60px rgba(138, 10, 10, 0.2),
+            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+            0 0 40px var(--action-glow);
+        }
       }
 
       #preview {
@@ -176,7 +233,7 @@
         pointer-events: none;
         font-family: "VT323", monospace;
         font-size: 32px;
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.9);
         text-shadow: 2px 2px 0px #000;
         z-index: 10;
       }
@@ -191,30 +248,40 @@
         height: 16px;
         background: #ff3b30;
         border-radius: 50%;
-        box-shadow: 0 0 10px #ff3b30;
+        box-shadow: 0 0 15px #ff3b30;
+        animation: blink 1.2s ease-in-out infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.4;
+          transform: scale(0.8);
+        }
       }
 
-      /* The 4-Cut Alignment Grid */
+      /* 🌟 4. SMOOTH GRID TRANSITION */
       .composition-grid {
         position: absolute;
         inset: 0;
         pointer-events: none;
-        border: 1px dashed rgba(255, 255, 255, 0.4);
         display: grid;
         grid-template-columns: 1fr 1fr;
         grid-template-rows: 1fr 1fr;
         z-index: 5;
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-      .composition-grid.visible {
-        opacity: 1;
       }
       .composition-grid div {
-        border: 1px dashed rgba(255, 255, 255, 0.4);
+        border: 1px dashed rgba(255, 255, 255, 0); /* Invisible by default */
+        transition: border-color 0.6s ease; /* Smooth fade in */
+      }
+      .composition-grid.visible div {
+        border-color: rgba(255, 255, 255, 0.4);
       }
 
-      /* --- 🛠️ Toolbar --- */
+      /* --- 🛠️ Toolbar & 🌟 3. GLASS SHINE HIGHLIGHT --- */
       .toolbar {
         position: fixed;
         bottom: 30px;
@@ -227,11 +294,11 @@
         backdrop-filter: blur(15px);
         border-radius: 100px;
         border: 1px solid rgba(138, 10, 10, 0.1);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 15px 35px rgba(138, 10, 10, 0.15);
         z-index: 200;
         transition:
-          transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-          opacity 0.3s ease;
+          transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.4s ease;
         flex-wrap: nowrap;
         white-space: nowrap;
       }
@@ -246,6 +313,8 @@
 
       button,
       select {
+        position: relative; /* For shine pseudo-element */
+        overflow: hidden;
         background: var(--action-lead);
         color: white;
         border: none;
@@ -255,15 +324,41 @@
         font-weight: 700;
         text-transform: uppercase;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         display: flex;
         align-items: center;
         gap: 8px;
         justify-content: center;
       }
+
+      /* The Glass Shine Sweep Animation */
+      button::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.4) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: skewX(-20deg);
+        transition: 0.6s ease;
+      }
+      button:hover::after {
+        left: 150%;
+      } /* Sweeps across on hover */
+
+      button:hover:not(:disabled) {
+        box-shadow: 0 8px 20px rgba(138, 10, 10, 0.3);
+        transform: translateY(-2px);
+      }
       button:active:not(:disabled) {
-        transform: scale(0.92);
-        filter: brightness(0.8);
+        transform: translateY(1px) scale(0.95);
+        filter: brightness(0.9);
       }
       button:disabled {
         opacity: 0.5;
@@ -272,40 +367,65 @@
       button.active {
         background: white;
         color: var(--action-lead);
-        box-shadow: 0 0 0 2px var(--action-lead);
+        box-shadow: 0 0 0 2px var(--action-lead) inset;
       }
 
       /* --- Overlays --- */
       .full-overlay {
         position: fixed;
         inset: 0;
-        background: var(--surface-primary);
+        background: rgba(243, 216, 230, 0.95);
+        backdrop-filter: blur(10px);
         z-index: 1000;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: opacity 0.5s ease;
       }
+      .full-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
       .overlay-card {
         background: var(--surface-white);
         padding: 50px;
-        border-radius: 20px;
-        border: 1px solid var(--action-lead);
+        border-radius: 24px;
+        border: 1px solid rgba(138, 10, 10, 0.2);
         text-align: center;
         width: 450px;
-        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 40px 80px rgba(138, 10, 10, 0.2);
+        animation: cardEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
+      @keyframes cardEntrance {
+        0% {
+          opacity: 0;
+          transform: scale(0.8) translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
       #licenseKey {
         width: 100%;
         padding: 15px;
         border-radius: 100px;
-        border: 1px solid var(--action-lead);
+        border: 2px solid rgba(138, 10, 10, 0.3);
         text-align: center;
         margin: 20px 0 10px 0;
         font-weight: bold;
         font-family: "Courier New", monospace;
         font-size: 16px;
         color: var(--action-lead);
+        transition: border-color 0.3s;
+        outline: none;
       }
+      #licenseKey:focus {
+        border-color: var(--action-lead);
+      }
+
       .floating-heart {
         position: fixed;
         bottom: 20px;
@@ -319,14 +439,11 @@
       @keyframes float {
         0%,
         100% {
-          transform: translateY(0);
+          transform: translateY(0) rotate(0deg);
         }
         50% {
-          transform: translateY(-20px);
+          transform: translateY(-20px) rotate(10deg);
         }
-      }
-      .hidden {
-        display: none !important;
       }
       .license-status {
         font-weight: 700;
@@ -345,16 +462,25 @@
     </style>
   </head>
   <body>
-    <!-- Ambient Typography Background (Fills empty white space elegantly) -->
-    <div class="ambient-text ambient-left">FILMONG</div>
-    <div class="ambient-text ambient-right">STUDIO</div>
+    <!-- 🌀 Kinetic Typography Background (Infinite Scroll) -->
+    <div class="ambient-container ambient-left">
+      <div class="ambient-track">
+        <span>FILMONG STUDIO FILMONG STUDIO FILMONG STUDIO</span>
+      </div>
+    </div>
+    <div class="ambient-container ambient-right">
+      <div class="ambient-track">
+        <span>LIVE MONITOR LIVE MONITOR LIVE MONITOR</span>
+      </div>
+    </div>
 
+    <!-- ✨ Header -->
     <div class="brand-header">
       <div class="logo-main">FILMONG</div>
       <div class="logo-sub">LIVE MONITOR</div>
     </div>
 
-    <!-- Live Performance Monitor -->
+    <!-- 📊 Performance Monitor -->
     <div class="perf-monitor hidden" id="perfMonitor">
       <span>RES: <b id="perfRes">0x0</b></span>
       <span>FPS: <b id="perfFps">0</b></span>
@@ -409,6 +535,7 @@
 
     <!-- 📸 Main Layout -->
     <div class="app-container">
+      <!-- 🌟 Breathing Wrapper -->
       <div class="preview-wrapper">
         <div class="cam-ui">
           <div class="rec-indicator">
@@ -418,7 +545,7 @@
           <div id="liveClock">12:00 AM</div>
         </div>
 
-        <!-- Alignment Grid for user posing -->
+        <!-- 🌟 Smooth Transition Grid -->
         <div class="composition-grid" id="gridOverlay">
           <div></div>
           <div></div>
@@ -536,7 +663,6 @@
         document.getElementById("perfFps").textContent = "0";
       }
 
-      // Specifically engineered for Fuji X-T2 / Ugreen capture cards to bypass browser compression
       const optimizedConstraints = {
         video: {
           width: { ideal: 1920 },
@@ -557,7 +683,7 @@
           currentStream = stream;
           preview.srcObject = stream;
           trackPerformance(stream.getVideoTracks()[0]);
-          sourceSelector.classList.add("hidden");
+          document.getElementById("sourceSelector").classList.add("hidden"); // Fixed transition compatibility
           await loadCameras();
           cameraSelect.classList.remove("hidden");
         } catch (e) {
@@ -574,7 +700,7 @@
           currentStream = stream;
           preview.srcObject = stream;
           trackPerformance(stream.getVideoTracks()[0]);
-          sourceSelector.classList.add("hidden");
+          document.getElementById("sourceSelector").classList.add("hidden");
         } catch (e) {
           alert("Screen Error: " + e.message);
         }
@@ -619,7 +745,7 @@
 
       function changeSource() {
         stopStream();
-        sourceSelector.classList.remove("hidden");
+        document.getElementById("sourceSelector").classList.remove("hidden");
       }
 
       function toggleFullscreen() {
@@ -717,7 +843,7 @@
           localStorage.setItem("license_expires", data.expires_at || "null");
           localStorage.setItem("license_activated", Date.now().toString());
           licenseOverlay.classList.add("hidden");
-          sourceSelector.classList.remove("hidden");
+          document.getElementById("sourceSelector").classList.remove("hidden");
           startLicenseHeartbeat();
         } catch (err) {
           licenseError.textContent = "Network error. Check connection.";
@@ -766,13 +892,13 @@
       function startTrialMode() {
         trialExpiresAt = Date.now() + 10 * 60 * 1000;
         licenseOverlay.classList.add("hidden");
-        sourceSelector.classList.remove("hidden");
+        document.getElementById("sourceSelector").classList.remove("hidden");
         updateLicenseStatus();
         setInterval(() => {
           updateLicenseStatus();
           if (Date.now() >= trialExpiresAt && !licenseInfo) {
             licenseOverlay.classList.remove("hidden");
-            sourceSelector.classList.add("hidden");
+            document.getElementById("sourceSelector").classList.add("hidden");
             stopStream();
           }
         }, 60000);
@@ -817,7 +943,9 @@
           const valid = await validateLicense();
           if (valid) {
             licenseOverlay.classList.add("hidden");
-            sourceSelector.classList.remove("hidden");
+            document
+              .getElementById("sourceSelector")
+              .classList.remove("hidden");
             startLicenseHeartbeat();
             return;
           } else {
