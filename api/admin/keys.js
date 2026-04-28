@@ -1,7 +1,7 @@
-const { kv } = require('../../_lib/kv');
+const { kv } = require('../_lib/kv');
 const { generateKey, hashKey, calculateExpiry, hashIP, truncateFingerprint } =
-  require('../../_lib/license-utils');
-const { requireAuth } = require('../../_lib/admin-auth');
+  require('../_lib/license-utils');
+const { requireAuth } = require('../_lib/admin-auth');
 
 /**
  * GET /api/admin/keys
