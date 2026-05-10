@@ -1,417 +1,1018 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Preview - Flip Horizontal</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filmong Live Preview Pro</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=VT323&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      :root {
+        --surface-primary: #f3d8e6;
+        --action-lead: #8a0a0a;
+        --action-glow: rgba(138, 10, 10, 0.4);
+        --surface-white: #ffffff;
+        --text-neutral: #1a1a1a;
+      }
 
-        body {
-            background: #0a0a0a;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-        .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 10px 20px;
-            background: #1a1a2e;
-            z-index: 10;
-            flex-wrap: wrap;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
+      body {
+        background-color: var(--surface-primary);
+        background-image: radial-gradient(
+          rgba(138, 10, 10, 0.08) 2px,
+          transparent 2px
+        );
+        background-size: 30px 30px;
+        color: var(--text-neutral);
+        font-family: "Montserrat", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
 
-        .fullscreen-mode .toolbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            transform: translateY(-100%);
-            opacity: 0;
-            pointer-events: none;
-        }
+      /* --- 🌀 KINETIC TYPOGRAPHY --- */
+      .ambient-container {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 12vw;
+        overflow: hidden;
+        z-index: 0;
+        pointer-events: none;
+        user-select: none;
+      }
+      .ambient-left {
+        left: 0;
+      }
+      .ambient-right {
+        right: 0;
+      }
 
-        .fullscreen-mode .toolbar.toolbar-visible {
-            transform: translateY(0);
-            opacity: 1;
-            pointer-events: auto;
-        }
+      .ambient-track {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        font-size: 15vw;
+        font-weight: 900;
+        color: rgba(138, 10, 10, 0.04);
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        height: 200vh;
+      }
 
-        .fullscreen-mode .info-bar {
-            transform: translateY(100%);
-            opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
+      .ambient-left .ambient-track {
+        transform: rotate(180deg);
+        animation: scrollMarquee 40s linear infinite;
+      }
+      .ambient-right .ambient-track {
+        animation: scrollMarqueeRight 40s linear infinite;
+      }
 
-        .toolbar button, .toolbar select {
-            padding: 8px 18px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
+      @keyframes scrollMarquee {
+        0% {
+          transform: translateY(0) rotate(180deg);
         }
-
-        .toolbar button {
-            background: #16213e;
-            color: #e0e0e0;
+        100% {
+          transform: translateY(50%) rotate(180deg);
         }
-
-        .toolbar button:hover {
-            background: #0f3460;
+      }
+      @keyframes scrollMarqueeRight {
+        0% {
+          transform: translateY(0);
         }
-
-        .toolbar button.active {
-            background: #e94560;
-            color: #fff;
+        100% {
+          transform: translateY(-50%);
         }
+      }
 
-        .toolbar select {
-            background: #16213e;
-            color: #e0e0e0;
-            outline: none;
+      /* --- ✨ UPGRADED FILMONG BRANDING --- */
+      .brand-header {
+        position: fixed;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        padding: 10px 25px 10px 30px;
+        border-radius: 100px;
+        box-shadow:
+          0 15px 35px rgba(138, 10, 10, 0.08),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+        z-index: 100;
+        pointer-events: none;
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      /* 🔴 THE FIX: Completely hide the logo when in Fullscreen */
+      .fullscreen-mode .brand-header {
+        opacity: 0;
+        transform: translate(-50%, -150%);
+      }
+
+      .logo-main {
+        font-weight: 900;
+        font-size: 28px;
+        letter-spacing: 1px;
+        background: linear-gradient(135deg, #8a0a0a 0%, #e94560 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0px 2px 4px rgba(138, 10, 10, 0.2));
+        line-height: 1;
+      }
+
+      .logo-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--action-lead);
+        text-transform: uppercase;
+        background: rgba(138, 10, 10, 0.06);
+        padding: 6px 14px;
+        border-radius: 50px;
+      }
+
+      .brand-live-dot {
+        width: 8px;
+        height: 8px;
+        background: #ff3b30;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #ff3b30;
+        animation: pulseBrand 1.5s infinite;
+      }
+      @keyframes pulseBrand {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
         }
-
-        .toolbar .status {
-            font-size: 12px;
-            color: #888;
-            margin-left: 10px;
+        50% {
+          opacity: 0.5;
+          transform: scale(0.8);
         }
+      }
 
-        .preview-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
+      /* --- 📊 Performance Monitor --- */
+      .perf-monitor {
+        position: fixed;
+        top: 25px;
+        right: 25px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #00ff00;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 0, 0.3);
+        z-index: 150;
+        backdrop-filter: blur(5px);
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+      }
+      .perf-monitor.hidden {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      .perf-monitor span {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      /* --- 📽️ Main Spatial Layout & BREATHING GLOW --- */
+      .app-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 40px 100px 40px;
+        width: 100%;
+        z-index: 10;
+      }
+
+      .preview-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        max-width: 1400px;
+        aspect-ratio: 16/9;
+        border-radius: 24px;
+        border: 8px solid var(--surface-white);
+        background: #000;
+        overflow: hidden;
+        animation: studioBreathing 4s ease-in-out infinite;
+      }
+
+      /* Expands fully in fullscreen */
+      .fullscreen-mode .preview-wrapper {
+        border: none;
+        border-radius: 0;
+        max-width: 100%;
+        height: 100%;
+        animation: none;
+        box-shadow: none;
+      }
+
+      .fullscreen-mode .app-container {
+        padding: 0;
+      }
+
+      @keyframes studioBreathing {
+        0%,
+        100% {
+          box-shadow:
+            0 20px 50px rgba(138, 10, 10, 0.1),
+            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+            0 0 0px var(--action-glow);
         }
-
-        #preview {
-            max-width: 100%;
-            max-height: 100%;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            transition: transform 0.3s ease;
+        50% {
+          box-shadow:
+            0 30px 60px rgba(138, 10, 10, 0.2),
+            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
+            0 0 40px var(--action-glow);
         }
+      }
 
-        #preview.flipped {
-            transform: scaleX(-1);
+      #preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      #preview.flipped {
+        transform: scaleX(-1);
+      }
+      #preview.flipped-v {
+        transform: scaleY(-1);
+      }
+      #preview.flipped.flipped-v {
+        transform: scaleX(-1) scaleY(-1);
+      }
+
+      /* --- 🎛️ In-Screen Overlays --- */
+      .cam-ui {
+        position: absolute;
+        top: 30px;
+        width: 100%;
+        padding: 0 40px;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        font-family: "VT323", monospace;
+        font-size: 32px;
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 2px 2px 0px #000;
+        z-index: 10;
+      }
+      .rec-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #ff3b30;
+      }
+      .rec-dot {
+        width: 16px;
+        height: 16px;
+        background: #ff3b30;
+        border-radius: 50%;
+        box-shadow: 0 0 15px #ff3b30;
+        animation: blink 1.2s ease-in-out infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
         }
-
-        #preview.flipped-v {
-            transform: scaleY(-1);
+        50% {
+          opacity: 0.4;
+          transform: scale(0.8);
         }
+      }
 
-        #preview.flipped.flipped-v {
-            transform: scaleX(-1) scaleY(-1);
+      .composition-grid {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        z-index: 5;
+      }
+      .composition-grid div {
+        border: 1px dashed rgba(255, 255, 255, 0);
+        transition: border-color 0.6s ease;
+      }
+      .composition-grid.visible div {
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* --- 🛠️ Toolbar --- */
+      .toolbar {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(15px);
+        border-radius: 100px;
+        border: 1px solid rgba(138, 10, 10, 0.1);
+        box-shadow: 0 15px 35px rgba(138, 10, 10, 0.15);
+        z-index: 200;
+        transition:
+          transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.4s ease;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+      .fullscreen-mode .toolbar {
+        transform: translate(-50%, 150%);
+        opacity: 0;
+      }
+      .fullscreen-mode .toolbar.show-toolbar {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+
+      button,
+      select {
+        position: relative;
+        overflow: hidden;
+        background: var(--action-lead);
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 12px 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      button::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(
+          to right,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.4) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: skewX(-20deg);
+        transition: 0.6s ease;
+      }
+      button:hover::after {
+        left: 150%;
+      }
+
+      button:hover:not(:disabled) {
+        box-shadow: 0 8px 20px rgba(138, 10, 10, 0.3);
+        transform: translateY(-2px);
+      }
+      button:active:not(:disabled) {
+        transform: translateY(1px) scale(0.95);
+        filter: brightness(0.9);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      button.active {
+        background: white;
+        color: var(--action-lead);
+        box-shadow: 0 0 0 2px var(--action-lead) inset;
+      }
+
+      /* --- Overlays --- */
+      .full-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(243, 216, 230, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease;
+      }
+      .full-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .overlay-card {
+        background: var(--surface-white);
+        padding: 50px;
+        border-radius: 24px;
+        border: 1px solid rgba(138, 10, 10, 0.2);
+        text-align: center;
+        width: 450px;
+        box-shadow: 0 40px 80px rgba(138, 10, 10, 0.2);
+        animation: cardEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      @keyframes cardEntrance {
+        0% {
+          opacity: 0;
+          transform: scale(0.8) translateY(20px);
         }
-
-        .fullscreen-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 20;
-            background: rgba(233, 69, 96, 0.8);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
         }
+      }
 
-        .fullscreen-btn:hover {
-            background: rgba(233, 69, 96, 1);
-            transform: scale(1.1);
+      #licenseKey {
+        width: 100%;
+        padding: 15px;
+        border-radius: 100px;
+        border: 2px solid rgba(138, 10, 10, 0.3);
+        text-align: center;
+        margin: 20px 0 10px 0;
+        font-weight: bold;
+        font-family: "Courier New", monospace;
+        font-size: 16px;
+        color: var(--action-lead);
+        transition: border-color 0.3s;
+        outline: none;
+      }
+      #licenseKey:focus {
+        border-color: var(--action-lead);
+      }
+
+      .floating-heart {
+        position: fixed;
+        bottom: 20px;
+        right: 30px;
+        font-size: 50px;
+        animation: float 4s ease-in-out infinite;
+        opacity: 0.6;
+        z-index: 10;
+        pointer-events: none;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
         }
-
-        .source-selector {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            gap: 20px;
+        50% {
+          transform: translateY(-20px) rotate(10deg);
         }
-
-        .source-selector h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        .source-selector .source-btn {
-            padding: 16px 40px;
-            font-size: 18px;
-            border: 2px solid #e94560;
-            background: transparent;
-            color: #fff;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 280px;
-            text-align: center;
-        }
-
-        .source-selector .source-btn:hover {
-            background: #e94560;
-        }
-
-        .info-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 20;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #aaa;
-        }
-
-        .hidden { display: none !important; }
-
-        @media (max-width: 600px) {
-            .toolbar { padding: 8px 10px; gap: 6px; }
-            .toolbar button { padding: 6px 12px; font-size: 12px; }
-        }
+      }
+      .license-status {
+        font-weight: 700;
+        font-size: 12px;
+        margin-top: 10px;
+        display: block;
+        color: #2d6a4f;
+      }
+      .trial-hint {
+        font-size: 11px;
+        color: var(--text-neutral);
+        margin-top: 15px;
+        display: block;
+        font-weight: 600;
+      }
     </style>
-</head>
-<body>
-
-    <!-- Source Selector -->
-    <div class="source-selector" id="sourceSelector">
-        <h2>Chọn nguồn video</h2>
-        <button class="source-btn" onclick="startCamera()">📷 Camera (Webcam)</button>
-        <button class="source-btn" onclick="startScreen()">🖥️ Chia sẻ màn hình</button>
-        <button class="source-btn" onclick="startWindow()">🪟 Chia sẻ cửa sổ</button>
+  </head>
+  <body>
+    <!-- 🌀 Kinetic Typography Background -->
+    <div class="ambient-container ambient-left">
+      <div class="ambient-track">
+        <span>FILMONG STUDIO FILMONG STUDIO FILMONG STUDIO</span>
+      </div>
+    </div>
+    <div class="ambient-container ambient-right">
+      <div class="ambient-track">
+        <span>LIVE MONITOR LIVE MONITOR LIVE MONITOR</span>
+      </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar" id="toolbar">
-        <button id="btnFlipH" onclick="toggleFlipH()">↔️ Flip Ngang</button>
-        <button id="btnFlipV" onclick="toggleFlipV()">↕️ Flip Dọc</button>
-        <select id="cameraSelect" class="hidden" onchange="switchCamera()"></select>
-        <button onclick="changeSource()">🔄 Đổi nguồn</button>
-        <button onclick="toggleFullscreen()">⛶ Toàn màn hình</button>
-        <span class="status" id="statusText"></span>
+    <!-- ✨ THE PREMIUM BRAND HEADER -->
+    <div class="brand-header">
+      <div class="logo-main">FILMONG</div>
+      <div class="logo-sub">
+        <div class="brand-live-dot"></div>
+        LIVE MONITOR
+      </div>
     </div>
 
-    <!-- Preview -->
-    <div class="preview-container">
+    <!-- 📊 Performance Monitor -->
+    <div class="perf-monitor hidden" id="perfMonitor">
+      <span>RES: <b id="perfRes">0x0</b></span>
+      <span>FPS: <b id="perfFps">0</b></span>
+      <span>CAM: <b id="perfName">None</b></span>
+    </div>
+
+    <!-- 🔑 License Overlay -->
+    <div id="licenseOverlay" class="full-overlay">
+      <div class="overlay-card">
+        <div class="logo-main" style="font-size: 24px; margin-bottom: 5px">
+          FILMONG
+        </div>
+        <div
+          class="logo-sub"
+          style="margin-bottom: 20px; justify-content: center; background: none"
+        >
+          System Activation
+        </div>
+        <input
+          type="text"
+          id="licenseKey"
+          placeholder="LIVE-XXXX-XXXX-XXXX"
+          maxlength="23"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="activateBtn" onclick="handleActivate()" style="width: 100%">
+          Activate System
+        </button>
+        <p
+          id="licenseError"
+          style="
+            color: var(--action-lead);
+            font-size: 12px;
+            margin-top: 10px;
+            min-height: 14px;
+            font-weight: bold;
+          "
+        ></p>
+        <small class="trial-hint">🎁 Trial Mode: 10 minutes without key</small>
+        <small id="licenseStatus" class="license-status"></small>
+      </div>
+    </div>
+
+    <!-- 📽️ Source Selector -->
+    <div id="sourceSelector" class="full-overlay hidden">
+      <div class="overlay-card">
+        <div
+          class="logo-sub"
+          style="margin-bottom: 20px; justify-content: center; background: none"
+        >
+          Choose Source
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <button onclick="startCamera()">📷 Camera (Capture Card)</button>
+          <button onclick="startScreen()">🖥️ Share Screen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📸 Main Layout -->
+    <div class="app-container">
+      <div class="preview-wrapper">
+        <div class="cam-ui">
+          <div class="rec-indicator">
+            <div class="rec-dot"></div>
+            LIVE PREVIEW
+          </div>
+          <div id="liveClock">12:00 AM</div>
+        </div>
+
+        <div class="composition-grid" id="gridOverlay">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+
         <video id="preview" autoplay playsinline muted></video>
+      </div>
     </div>
 
-    <!-- Info -->
-    <div class="info-bar" id="infoBar">
-        Truy cập từ thiết bị khác cùng mạng: <strong id="lanUrl">đang tải...</strong>
+    <div class="floating-heart">💖</div>
+
+    <!-- 🛠️ Toolbar -->
+    <div class="toolbar" id="toolbar">
+      <button id="btnGrid" onclick="toggleGrid()">🔲 Khung Căn Chỉnh</button>
+      <button id="btnPerf" onclick="togglePerf()">📊 Thông Số</button>
+      <button id="btnFlipH" onclick="toggleFlipH()">↔️ Ngang</button>
+      <button id="btnFlipV" onclick="toggleFlipV()">↕️ Dọc</button>
+      <select
+        id="cameraSelect"
+        class="hidden"
+        onchange="switchCamera()"
+      ></select>
+      <button onclick="changeSource()">🔄 Nguồn</button>
+      <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
 
     <script>
-        const preview = document.getElementById('preview');
-        const sourceSelector = document.getElementById('sourceSelector');
-        const toolbar = document.getElementById('toolbar');
-        const cameraSelect = document.getElementById('cameraSelect');
-        const statusText = document.getElementById('statusText');
-        const lanUrl = document.getElementById('lanUrl');
+      /* =======================================================
+           1. UI FEATURES LOGIC
+           ======================================================= */
+      function updateClock() {
+        const now = new Date();
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        document.getElementById("liveClock").textContent =
+          hours + ":" + minutes + " " + ampm;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
 
-        let currentStream = null;
-        let isFlippedH = false;
-        let isFlippedV = false;
+      function toggleGrid() {
+        document.getElementById("gridOverlay").classList.toggle("visible");
+        document.getElementById("btnGrid").classList.toggle("active");
+      }
 
-        // Flip Horizontal
-        function toggleFlipH() {
-            isFlippedH = !isFlippedH;
-            preview.classList.toggle('flipped', isFlippedH);
-            document.getElementById('btnFlipH').classList.toggle('active', isFlippedH);
-            updateStatus();
+      function togglePerf() {
+        document.getElementById("perfMonitor").classList.toggle("hidden");
+        document.getElementById("btnPerf").classList.toggle("active");
+      }
+
+      /* =======================================================
+           2. PERFORMANCE MONITORING
+           ======================================================= */
+      let perfInterval = null;
+      function trackPerformance(track) {
+        if (perfInterval) clearInterval(perfInterval);
+        const perfRes = document.getElementById("perfRes");
+        const perfFps = document.getElementById("perfFps");
+        const perfName = document.getElementById("perfName");
+
+        perfName.textContent =
+          track.label.substring(0, 15) + (track.label.length > 15 ? "..." : "");
+
+        perfInterval = setInterval(() => {
+          const settings = track.getSettings();
+          perfRes.textContent = `${settings.width || 0}x${settings.height || 0}`;
+          perfFps.textContent = Math.round(settings.frameRate || 0);
+        }, 1000);
+      }
+
+      /* =======================================================
+           3. CORE CAMERA LOGIC
+           ======================================================= */
+      const preview = document.getElementById("preview");
+      const sourceSelector = document.getElementById("sourceSelector");
+      const toolbar = document.getElementById("toolbar");
+      const cameraSelect = document.getElementById("cameraSelect");
+
+      let currentStream = null;
+      let isFlippedH = false;
+      let isFlippedV = false;
+
+      function toggleFlipH() {
+        isFlippedH = !isFlippedH;
+        preview.classList.toggle("flipped", isFlippedH);
+        document
+          .getElementById("btnFlipH")
+          .classList.toggle("active", isFlippedH);
+      }
+
+      function toggleFlipV() {
+        isFlippedV = !isFlippedV;
+        preview.classList.toggle("flipped-v", isFlippedV);
+        document
+          .getElementById("btnFlipV")
+          .classList.toggle("active", isFlippedV);
+      }
+
+      function stopStream() {
+        if (currentStream) {
+          currentStream.getTracks().forEach((t) => t.stop());
+          currentStream = null;
         }
-
-        // Flip Vertical
-        function toggleFlipV() {
-            isFlippedV = !isFlippedV;
-            preview.classList.toggle('flipped-v', isFlippedV);
-            document.getElementById('btnFlipV').classList.toggle('active', isFlippedV);
-            updateStatus();
+        if (perfInterval) {
+          clearInterval(perfInterval);
+          perfInterval = null;
         }
+        document.getElementById("perfRes").textContent = "0x0";
+        document.getElementById("perfFps").textContent = "0";
+      }
 
-        function updateStatus() {
-            const parts = [];
-            if (isFlippedH) parts.push('Flip Ngang');
-            if (isFlippedV) parts.push('Flip Dọc');
-            statusText.textContent = parts.length ? '🔄 ' + parts.join(' + ') : '';
+      const optimizedConstraints = {
+        video: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 60 },
+          noiseSuppression: false,
+          autoGainControl: false,
+          echoCancellation: false,
+        },
+        audio: false,
+      };
+
+      async function startCamera() {
+        stopStream();
+        try {
+          const stream =
+            await navigator.mediaDevices.getUserMedia(optimizedConstraints);
+          currentStream = stream;
+          preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
+          document.getElementById("sourceSelector").classList.add("hidden");
+          await loadCameras();
+          cameraSelect.classList.remove("hidden");
+        } catch (e) {
+          alert("Camera Error: " + e.message);
         }
+      }
 
-        // Stop current stream
-        function stopStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(t => t.stop());
-                currentStream = null;
-            }
+      async function startScreen() {
+        stopStream();
+        try {
+          const stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+          });
+          currentStream = stream;
+          preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
+          document.getElementById("sourceSelector").classList.add("hidden");
+        } catch (e) {
+          alert("Screen Error: " + e.message);
         }
+      }
 
-        // Start Camera
-        async function startCamera() {
+      async function loadCameras() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter((d) => d.kind === "videoinput");
+        cameraSelect.innerHTML = "";
+        cameras.forEach((cam, i) => {
+          const opt = document.createElement("option");
+          opt.value = cam.deviceId;
+          opt.textContent = cam.label || `Cam ${i + 1}`;
+          cameraSelect.appendChild(opt);
+        });
+      }
+
+      async function switchCamera() {
+        stopStream();
+        const switchConstraints = {
+          video: {
+            deviceId: { exact: cameraSelect.value },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 },
+            noiseSuppression: false,
+            autoGainControl: false,
+            echoCancellation: false,
+          },
+          audio: false,
+        };
+        try {
+          const stream =
+            await navigator.mediaDevices.getUserMedia(switchConstraints);
+          currentStream = stream;
+          preview.srcObject = stream;
+          trackPerformance(stream.getVideoTracks()[0]);
+        } catch (e) {
+          alert("Switch Camera Error: " + e.message);
+        }
+      }
+
+      function changeSource() {
+        stopStream();
+        document.getElementById("sourceSelector").classList.remove("hidden");
+      }
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement)
+          document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+
+      document.addEventListener("fullscreenchange", () => {
+        if (document.fullscreenElement)
+          document.body.classList.add("fullscreen-mode");
+        else {
+          document.body.classList.remove("fullscreen-mode");
+          toolbar.classList.remove("show-toolbar");
+        }
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!document.fullscreenElement) return;
+        if (window.innerHeight - e.clientY < 100)
+          toolbar.classList.add("show-toolbar");
+        else toolbar.classList.remove("show-toolbar");
+      });
+
+      /* =======================================================
+           4. SECURE API LICENSE LOGIC
+           ======================================================= */
+      const licenseOverlay = document.getElementById("licenseOverlay");
+      const licenseKeyInput = document.getElementById("licenseKey");
+      const licenseError = document.getElementById("licenseError");
+      const licenseStatus = document.getElementById("licenseStatus");
+      const activateBtn = document.getElementById("activateBtn");
+
+      let licenseInfo = null;
+      let trialExpiresAt = null;
+
+      async function generateFingerprint() {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = 200;
+          canvas.height = 50;
+          ctx.fillStyle = "#f60";
+          ctx.fillRect(0, 0, 200, 50);
+          ctx.fillText("FP:" + navigator.userAgent, 2, 25);
+          const data = [
+            navigator.userAgent,
+            navigator.language,
+            screen.colorDepth,
+            canvas.toDataURL(),
+          ].join("|");
+          const encoder = new TextEncoder();
+          const buffer = await crypto.subtle.digest(
+            "SHA-256",
+            encoder.encode(data),
+          );
+          return Array.from(new Uint8Array(buffer))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("")
+            .slice(0, 32);
+        } catch (err) {
+          return "unknown";
+        }
+      }
+
+      async function handleActivate() {
+        const key = licenseKeyInput.value.trim().toUpperCase();
+        if (!key.match(/^LIVE-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/)) {
+          licenseError.textContent = "Format required: LIVE-XXXX-XXXX-XXXX";
+          return;
+        }
+        activateBtn.disabled = true;
+        licenseError.textContent = "Activating...";
+        try {
+          const fingerprint = await generateFingerprint();
+          const res = await fetch("/api/activate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              key,
+              fingerprint,
+              userAgent: navigator.userAgent,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            licenseError.textContent =
+              data.message || data.error || "Activation failed";
+            activateBtn.disabled = false;
+            return;
+          }
+          licenseInfo = data;
+          localStorage.setItem("license_key", key);
+          localStorage.setItem("license_fingerprint", fingerprint);
+          localStorage.setItem("license_expires", data.expires_at || "null");
+          localStorage.setItem("license_activated", Date.now().toString());
+          licenseOverlay.classList.add("hidden");
+          document.getElementById("sourceSelector").classList.remove("hidden");
+          startLicenseHeartbeat();
+        } catch (err) {
+          licenseError.textContent = "Network error. Check connection.";
+          activateBtn.disabled = false;
+        }
+      }
+
+      async function validateLicense() {
+        const key = localStorage.getItem("license_key");
+        const fingerprint = localStorage.getItem("license_fingerprint");
+        if (!key || !fingerprint) return false;
+        try {
+          const res = await fetch("/api/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key, fingerprint }),
+          });
+          const data = await res.json();
+          if (data.valid) {
+            licenseInfo = data;
+            localStorage.setItem("license_last_check", Date.now().toString());
+            return true;
+          }
+        } catch (err) {
+          return checkOfflineGrace();
+        }
+        return false;
+      }
+
+      function checkOfflineGrace() {
+        const lastCheck = localStorage.getItem("license_last_check");
+        return lastCheck ? Date.now() < parseInt(lastCheck) + 86400000 : false;
+      }
+
+      function updateLicenseStatus() {
+        if (licenseInfo) licenseStatus.textContent = "✓ SYSTEM ACTIVATED";
+        else if (trialExpiresAt) {
+          const remaining = Math.ceil((trialExpiresAt - Date.now()) / 60000);
+          if (remaining > 0)
+            licenseStatus.textContent = `⏱ Trial mode: ${remaining}m remaining`;
+          else
+            licenseStatus.textContent = "⏱ Trial expired. Activation required.";
+        }
+      }
+
+      function startTrialMode() {
+        trialExpiresAt = Date.now() + 10 * 60 * 1000;
+        licenseOverlay.classList.add("hidden");
+        document.getElementById("sourceSelector").classList.remove("hidden");
+        updateLicenseStatus();
+        setInterval(() => {
+          updateLicenseStatus();
+          if (Date.now() >= trialExpiresAt && !licenseInfo) {
+            licenseOverlay.classList.remove("hidden");
+            document.getElementById("sourceSelector").classList.add("hidden");
             stopStream();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 165 } },
-                    audio: false
-                });
-                currentStream = stream;
-                preview.srcObject = stream;
-                sourceSelector.classList.add('hidden');
-                await loadCameras();
-                cameraSelect.classList.remove('hidden');
-            } catch (e) {
-                alert('Không thể truy cập camera: ' + e.message);
-            }
+          }
+        }, 60000);
+      }
+
+      function startLicenseHeartbeat() {
+        setInterval(validateLicense, 300000);
+        updateLicenseStatus();
+      }
+
+      const originalStartCamera = window.startCamera;
+      window.startCamera = async function () {
+        if (!licenseInfo && !trialExpiresAt) startTrialMode();
+        else if (
+          trialExpiresAt &&
+          Date.now() >= trialExpiresAt &&
+          !licenseInfo
+        ) {
+          licenseOverlay.classList.remove("hidden");
+          return;
         }
+        return originalStartCamera();
+      };
 
-        // Start Screen Share
-        async function startScreen() {
-            stopStream();
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } },
-                    audio: false
-                });
-                currentStream = stream;
-                preview.srcObject = stream;
-                sourceSelector.classList.add('hidden');
-                cameraSelect.classList.add('hidden');
-
-                stream.getVideoTracks()[0].onended = () => {
-                    changeSource();
-                };
-            } catch (e) {
-                alert('Không thể chia sẻ màn hình: ' + e.message);
-            }
+      const originalStartScreen = window.startScreen;
+      window.startScreen = async function () {
+        if (!licenseInfo && !trialExpiresAt) startTrialMode();
+        else if (
+          trialExpiresAt &&
+          Date.now() >= trialExpiresAt &&
+          !licenseInfo
+        ) {
+          licenseOverlay.classList.remove("hidden");
+          return;
         }
+        return originalStartScreen();
+      };
 
-        // Start Window Share
-        async function startWindow() {
-            await startScreen(); // Same API, user picks window
+      async function initLicenseFlow() {
+        const savedKey = localStorage.getItem("license_key");
+        if (savedKey) {
+          const valid = await validateLicense();
+          if (valid) {
+            licenseOverlay.classList.add("hidden");
+            document
+              .getElementById("sourceSelector")
+              .classList.remove("hidden");
+            startLicenseHeartbeat();
+            return;
+          } else {
+            localStorage.removeItem("license_key");
+            localStorage.removeItem("license_fingerprint");
+          }
         }
-
-        // Load camera list
-        async function loadCameras() {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const cameras = devices.filter(d => d.kind === 'videoinput');
-            cameraSelect.innerHTML = '';
-            cameras.forEach((cam, i) => {
-                const opt = document.createElement('option');
-                opt.value = cam.deviceId;
-                opt.textContent = cam.label || `Camera ${i + 1}`;
-                cameraSelect.appendChild(opt);
-            });
-        }
-
-        // Switch camera
-        async function switchCamera() {
-            stopStream();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        deviceId: { exact: cameraSelect.value },
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        frameRate: { ideal: 60 }
-                    },
-                    audio: false
-                });
-                currentStream = stream;
-                preview.srcObject = stream;
-            } catch (e) {
-                alert('Không thể chuyển camera: ' + e.message);
-            }
-        }
-
-        // Change source
-        function changeSource() {
-            stopStream();
-            preview.srcObject = null;
-            sourceSelector.classList.remove('hidden');
-            cameraSelect.classList.add('hidden');
-        }
-
-        // Fullscreen
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
-        }
-
-        // Fullscreen toolbar auto-hide
-        let toolbarTimeout = null;
-
-        document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) {
-                document.body.classList.add('fullscreen-mode');
-            } else {
-                document.body.classList.remove('fullscreen-mode');
-                toolbar.classList.remove('toolbar-visible');
-            }
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!document.fullscreenElement) return;
-            if (e.clientY < 80) {
-                toolbar.classList.add('toolbar-visible');
-                clearTimeout(toolbarTimeout);
-                toolbarTimeout = setTimeout(() => {
-                    toolbar.classList.remove('toolbar-visible');
-                }, 2000);
-            }
-        });
-
-        toolbar.addEventListener('mouseenter', () => {
-            if (!document.fullscreenElement) return;
-            clearTimeout(toolbarTimeout);
-            toolbar.classList.add('toolbar-visible');
-        });
-
-        toolbar.addEventListener('mouseleave', () => {
-            if (!document.fullscreenElement) return;
-            toolbarTimeout = setTimeout(() => {
-                toolbar.classList.remove('toolbar-visible');
-            }, 1000);
-        });
-
-        // Show LAN URL
-        lanUrl.textContent = window.location.href;
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'h' || e.key === 'H') toggleFlipH();
-            if (e.key === 'v' || e.key === 'V') toggleFlipV();
-            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-            if (e.key === 'Escape' && currentStream) changeSource();
-        });
+      }
+      if (document.readyState === "loading")
+        document.addEventListener("DOMContentLoaded", initLicenseFlow);
+      else initLicenseFlow();
     </script>
-</body>
+  </body>
 </html>
