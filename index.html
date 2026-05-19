@@ -118,7 +118,6 @@
         transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
-      /* 🔴 THE FIX: Completely hide the logo when in Fullscreen */
       .fullscreen-mode .brand-header {
         opacity: 0;
         transform: translate(-50%, -150%);
@@ -226,7 +225,6 @@
         animation: studioBreathing 4s ease-in-out infinite;
       }
 
-      /* Expands fully in fullscreen */
       .fullscreen-mode .preview-wrapper {
         border: none;
         border-radius: 0;
@@ -399,7 +397,6 @@
       button:hover::after {
         left: 150%;
       }
-
       button:hover:not(:disabled) {
         box-shadow: 0 8px 20px rgba(138, 10, 10, 0.3);
         transform: translateY(-2px);
@@ -416,6 +413,24 @@
         background: white;
         color: var(--action-lead);
         box-shadow: 0 0 0 2px var(--action-lead) inset;
+      }
+
+      /* 🎥 CSS mới cho chức năng Ghi Hình */
+      @keyframes recordingPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(255, 59, 48, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+        }
+      }
+      button.btn-recording-active {
+        background: #ff3b30 !important;
+        color: #ffffff !important;
+        animation: recordingPulse 1.5s infinite;
       }
 
       /* --- Overlays --- */
@@ -596,9 +611,9 @@
     <div class="app-container">
       <div class="preview-wrapper">
         <div class="cam-ui">
-          <div class="rec-indicator">
+          <div class="rec-indicator" id="recIndicatorUI">
             <div class="rec-dot"></div>
-            LIVE PREVIEW
+            <span id="recText">LIVE PREVIEW</span>
           </div>
           <div id="liveClock">12:00 AM</div>
         </div>
@@ -627,6 +642,10 @@
         class="hidden"
         onchange="switchCamera()"
       ></select>
+
+      <!-- Nút Ghi Hình Mới -->
+      <button id="btnRecord" onclick="toggleRecording()">🔴 Ghi Hình</button>
+
       <button onclick="changeSource()">🔄 Nguồn</button>
       <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
@@ -680,7 +699,115 @@
       }
 
       /* =======================================================
-           3. CORE CAMERA LOGIC
+           3. VIDEO RECORDING FEATURE (NEW)
+           ======================================================= */
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let isRecording = false;
+
+      function toggleRecording() {
+        if (!currentStream) {
+          alert(
+            "⚠️ Vui lòng chọn nguồn phát (Camera/Screen) trước khi bắt đầu ghi hình!",
+          );
+          return;
+        }
+
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+      }
+
+     function startRecording() {
+        recordedChunks = [];
+        try {
+          // 1. TÌM CODEC CHẤT LƯỢNG CAO NHẤT MÀ TRÌNH DUYỆT HỖ TRỢ
+          let selectedMimeType = "";
+          const types = [
+            "video/webm;codecs=vp9,opus",
+            "video/webm;codecs=vp8,opus",
+            "video/webm;codecs=h264,opus",
+            "video/mp4;codecs=h264,aac",
+            "video/webm"
+          ];
+
+          for (let type of types) {
+            if (MediaRecorder.isTypeSupported(type)) {
+              selectedMimeType = type;
+              break;
+            }
+          }
+
+          // 2. CẤU HÌNH MEDIA RECORDER VỚI BITRATE CAO (HIGH QUALITY)
+          // Tăng videoBitsPerSecond lên 8 Mbps (8000000) hoặc 15 Mbps (15000000) để giữ chi tiết 1080p 60fps
+          const options = {
+            mimeType: selectedMimeType,
+            videoBitsPerSecond: 12000000 // 12 Mbps - Chất lượng cực cao
+          };
+
+          mediaRecorder = new MediaRecorder(currentStream, options);
+
+          mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+              recordedChunks.push(event.data);
+            }
+          };
+
+          mediaRecorder.onstop = function() {
+            // Tự động nhận diện đuôi file theo mimetype đã chọn
+            const ext = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+
+            const blob = new Blob(recordedChunks, { type: selectedMimeType });
+            const url = URL.createObjectURL(blob);
+
+            // Tạo thẻ 'a' ẩn để download tự động
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.href = url;
+
+            // Format timestamp làm tên file
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            a.download = `Filmong-HQ-${timestamp}.${ext}`;
+            a.click();
+
+            // Cleanup memory
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          };
+
+          // Yêu cầu cắt chunk mỗi 1 giây (1000ms) để an toàn bộ nhớ (tránh mất file nếu crash)
+          mediaRecorder.start(1000);
+          isRecording = true;
+
+          // Cập nhật UI sang trạng thái Đang Ghi
+          const btnRecord = document.getElementById("btnRecord");
+          btnRecord.innerHTML = "⏹ Dừng Ghi (HQ)";
+          btnRecord.classList.add("btn-recording-active");
+          document.getElementById("recText").textContent = "REC • CHẤT LƯỢNG CAO";
+
+        } catch (e) {
+          alert("Lỗi khi khởi tạo ghi hình: " + e.message);
+        }
+      }
+
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
+
+        // Hoàn trả UI về trạng thái Bình Thường
+        const btnRecord = document.getElementById("btnRecord");
+        btnRecord.innerHTML = "🔴 Ghi Hình";
+        btnRecord.classList.remove("btn-recording-active");
+        document.getElementById("recText").textContent = "LIVE PREVIEW";
+      }
+
+      /* =======================================================
+           4. CORE CAMERA LOGIC
            ======================================================= */
       const preview = document.getElementById("preview");
       const sourceSelector = document.getElementById("sourceSelector");
@@ -708,6 +835,11 @@
       }
 
       function stopStream() {
+        // [SAFETY HOOK] Tự động dừng quay và lưu video nếu tắt camera đột ngột
+        if (isRecording) {
+          stopRecording();
+        }
+
         if (currentStream) {
           currentStream.getTracks().forEach((t) => t.stop());
           currentStream = null;
@@ -827,7 +959,7 @@
       });
 
       /* =======================================================
-           4. SECURE API LICENSE LOGIC
+           5. SECURE API LICENSE LOGIC
            ======================================================= */
       const licenseOverlay = document.getElementById("licenseOverlay");
       const licenseKeyInput = document.getElementById("licenseKey");
