@@ -523,6 +523,7 @@
         font-weight: 600;
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/fix-webm-duration@1.0.6/fix-webm-duration.js"></script>
   </head>
   <body>
     <!-- 🌀 Kinetic Typography Background -->
@@ -652,8 +653,8 @@
 
     <script>
       /* =======================================================
-           1. UI FEATURES LOGIC
-           ======================================================= */
+            1. UI FEATURES LOGIC
+            ======================================================= */
       function updateClock() {
         const now = new Date();
         let hours = now.getHours();
@@ -679,8 +680,8 @@
       }
 
       /* =======================================================
-           2. PERFORMANCE MONITORING
-           ======================================================= */
+            2. PERFORMANCE MONITORING
+            ======================================================= */
       let perfInterval = null;
       function trackPerformance(track) {
         if (perfInterval) clearInterval(perfInterval);
@@ -699,11 +700,28 @@
       }
 
       /* =======================================================
-           3. VIDEO RECORDING FEATURE (NEW)
+           3. VIDEO RECORDING FEATURE (FIXED METADATA & SYNC)
            ======================================================= */
       let mediaRecorder = null;
       let recordedChunks = [];
       let isRecording = false;
+
+      // Biến phục vụ Timer
+      let recordStartTime = 0;
+      let recordTimerInterval = null;
+
+      // Hàm format giây sang MM:SS hoặc HH:MM:SS
+      function formatTime(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60)
+          .toString()
+          .padStart(2, "0");
+        const s = Math.floor(totalSeconds % 60)
+          .toString()
+          .padStart(2, "0");
+        if (h > 0) return `${h.toString().padStart(2, "0")}:${m}:${s}`;
+        return `${m}:${s}`;
+      }
 
       function toggleRecording() {
         if (!currentStream) {
@@ -720,17 +738,17 @@
         }
       }
 
-     function startRecording() {
+      function startRecording() {
         recordedChunks = [];
         try {
-          // 1. TÌM CODEC CHẤT LƯỢNG CAO NHẤT MÀ TRÌNH DUYỆT HỖ TRỢ
+          // 1. ƯU TIÊN MP4 (Chrome mới hỗ trợ native MP4, khắc phục 100% lỗi WebM trên Windows)
           let selectedMimeType = "";
           const types = [
+            "video/mp4;codecs=h264,aac",
+            "video/mp4",
             "video/webm;codecs=vp9,opus",
             "video/webm;codecs=vp8,opus",
-            "video/webm;codecs=h264,opus",
-            "video/mp4;codecs=h264,aac",
-            "video/webm"
+            "video/webm",
           ];
 
           for (let type of types) {
@@ -740,54 +758,77 @@
             }
           }
 
-          // 2. CẤU HÌNH MEDIA RECORDER VỚI BITRATE CAO (HIGH QUALITY)
-          // Tăng videoBitsPerSecond lên 8 Mbps (8000000) hoặc 15 Mbps (15000000) để giữ chi tiết 1080p 60fps
+          // 2. TỐI ƯU HIỆU SUẤT TRÁNH RỚT FRAME (DROP FRAMES)
+          // Mức 8 Mbps (8000000) là cực nét nhưng vẫn an toàn để CPU không bị quá tải.
           const options = {
             mimeType: selectedMimeType,
-            videoBitsPerSecond: 12000000 // 12 Mbps - Chất lượng cực cao
+            videoBitsPerSecond: 8000000,
           };
 
           mediaRecorder = new MediaRecorder(currentStream, options);
 
-          mediaRecorder.ondataavailable = function(event) {
+          mediaRecorder.ondataavailable = function (event) {
             if (event.data.size > 0) {
               recordedChunks.push(event.data);
             }
           };
 
-          mediaRecorder.onstop = function() {
-            // Tự động nhận diện đuôi file theo mimetype đã chọn
-            const ext = selectedMimeType.includes('mp4') ? 'mp4' : 'webm';
+          mediaRecorder.onstop = function () {
+            const rawBlob = new Blob(recordedChunks, {
+              type: selectedMimeType,
+            });
+            const ext = selectedMimeType.includes("mp4") ? "mp4" : "webm";
+            const durationMs = Date.now() - recordStartTime;
 
-            const blob = new Blob(recordedChunks, { type: selectedMimeType });
-            const url = URL.createObjectURL(blob);
+            // Hàm xử lý Download
+            const triggerDownload = (finalBlob) => {
+              const url = URL.createObjectURL(finalBlob);
+              const a = document.createElement("a");
+              document.body.appendChild(a);
+              a.style = "display: none";
+              a.href = url;
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              a.download = `Filmong-HQ-${timestamp}.${ext}`;
+              a.click();
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              }, 100);
+            };
 
-            // Tạo thẻ 'a' ẩn để download tự động
-            const a = document.createElement('a');
-            document.body.appendChild(a);
-            a.style = 'display: none';
-            a.href = url;
-
-            // Format timestamp làm tên file
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            a.download = `Filmong-HQ-${timestamp}.${ext}`;
-            a.click();
-
-            // Cleanup memory
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            // Chạy fix-webm-duration CHỈ KHI định dạng thực sự là WebM
+            if (ext === "webm" && typeof ysFixWebmDuration !== "undefined") {
+              ysFixWebmDuration(rawBlob, durationMs, function (fixedBlob) {
+                triggerDownload(fixedBlob);
+              });
+            } else {
+              // Nếu trình duyệt hỗ trợ MP4, tải thẳng file gốc!
+              triggerDownload(rawBlob);
+            }
           };
 
-          // Yêu cầu cắt chunk mỗi 1 giây (1000ms) để an toàn bộ nhớ (tránh mất file nếu crash)
-          mediaRecorder.start(1000);
+          // 3. QUAN TRỌNG: BỎ SỐ (1000) Ở LỆNH START!
+          // Việc loại bỏ cắt chunk theo giây giúp trình duyệt tự sắp xếp Keyframe chuẩn xác,
+          // giải quyết triệt để tình trạng lệch thời lượng và hỏng Timeline Cues.
+          mediaRecorder.start();
           isRecording = true;
 
-          // Cập nhật UI sang trạng thái Đang Ghi
-          const btnRecord = document.getElementById("btnRecord");
-          btnRecord.innerHTML = "⏹ Dừng Ghi (HQ)";
-          btnRecord.classList.add("btn-recording-active");
-          document.getElementById("recText").textContent = "REC • CHẤT LƯỢNG CAO";
+          // Bộ đếm giờ (Timer)
+          recordStartTime = Date.now();
+          document.getElementById("recText").textContent = "REC • 00:00";
 
+          recordTimerInterval = setInterval(() => {
+            const elapsedSec = Math.floor(
+              (Date.now() - recordStartTime) / 1000,
+            );
+            document.getElementById("recText").textContent =
+              `REC • ${formatTime(elapsedSec)}`;
+          }, 1000);
+
+          // Đổi UI Nút
+          const btnRecord = document.getElementById("btnRecord");
+          btnRecord.innerHTML = "⏹ Dừng Ghi";
+          btnRecord.classList.add("btn-recording-active");
         } catch (e) {
           alert("Lỗi khi khởi tạo ghi hình: " + e.message);
         }
@@ -799,16 +840,18 @@
         }
         isRecording = false;
 
-        // Hoàn trả UI về trạng thái Bình Thường
+        // Reset UI Timer
+        clearInterval(recordTimerInterval);
+        document.getElementById("recText").textContent = "LIVE PREVIEW";
+
         const btnRecord = document.getElementById("btnRecord");
         btnRecord.innerHTML = "🔴 Ghi Hình";
         btnRecord.classList.remove("btn-recording-active");
-        document.getElementById("recText").textContent = "LIVE PREVIEW";
       }
 
       /* =======================================================
-           4. CORE CAMERA LOGIC
-           ======================================================= */
+            4. CORE CAMERA LOGIC
+            ======================================================= */
       const preview = document.getElementById("preview");
       const sourceSelector = document.getElementById("sourceSelector");
       const toolbar = document.getElementById("toolbar");
@@ -959,8 +1002,8 @@
       });
 
       /* =======================================================
-           5. SECURE API LICENSE LOGIC
-           ======================================================= */
+            5. SECURE API LICENSE LOGIC
+            ======================================================= */
       const licenseOverlay = document.getElementById("licenseOverlay");
       const licenseKeyInput = document.getElementById("licenseKey");
       const licenseError = document.getElementById("licenseError");
