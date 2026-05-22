@@ -729,7 +729,7 @@
       }
 
       /* =======================================================
-           3. VIDEO RECORDING FEATURE (30s LIMIT & NOTIFICATION)
+           3. VIDEO RECORDING FEATURE WITH CANVAS PIPELINE (FLIP SUPPORT)
            ======================================================= */
       let mediaRecorder = null;
       let recordedChunks = [];
@@ -738,7 +738,8 @@
       // Biến phục vụ Timer & Giới hạn 30 giây
       let recordStartTime = 0;
       let recordTimerInterval = null;
-      let recordLimitTimeout = null; // Quản lý thời gian tự động dừng
+      let recordLimitTimeout = null;
+      let canvasRecordRAF = null; // Quản lý luồng lặp của canvas ẩn
 
       // Hàm format giây sang MM:SS hoặc HH:MM:SS
       function formatTime(totalSeconds) {
@@ -782,15 +783,83 @@
       function startRecording() {
         recordedChunks = [];
         try {
-          // 1. ƯU TIÊN MP4 (Khắc phục lỗi WebM trên Windows)
+          // KHẮC PHỤC LỖI LOGIC: Set trạng thái ghi hình lên TRUE trước khi chạy luồng Canvas!
+          isRecording = true;
+          let recordStream = currentStream;
+
+          // KIỂM TRA: Nếu người dùng đang áp dụng Lật Ngang hoặc Lật Dọc,
+          // chúng ta sẽ định tuyến luồng video qua Canvas để ghi lại hình ảnh đã lật thực tế.
+          if (isFlippedH || isFlippedV) {
+            const videoTrack = currentStream.getVideoTracks()[0];
+            const settings = videoTrack.getSettings();
+            const width = settings.width || 1280;
+            const height = settings.height || 720;
+
+            // Tạo canvas xử lý ẩn
+            const recordCanvas = document.createElement("canvas");
+            recordCanvas.width = width;
+            recordCanvas.height = height;
+            const ctx = recordCanvas.getContext("2d");
+
+            // Vẽ vòng lặp từng khung hình (frame-by-frame) để lật trục tọa độ
+            function drawFrame() {
+              if (!isRecording) return;
+              ctx.clearRect(0, 0, width, height);
+              ctx.save();
+
+              // Di chuyển và lật hệ trục tọa độ dựa trên thiết lập nút bấm
+              if (isFlippedH && isFlippedV) {
+                ctx.translate(width, height);
+                ctx.scale(-1, -1);
+              } else if (isFlippedH) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+              } else if (isFlippedV) {
+                ctx.translate(0, height);
+                ctx.scale(1, -1);
+              }
+
+              ctx.drawImage(preview, 0, 0, width, height);
+              ctx.restore();
+              canvasRecordRAF = requestAnimationFrame(drawFrame);
+            }
+
+            // Gọi vòng lặp vẽ (Vòng lặp sẽ chạy mượt mà vì isRecording đã được set = true phía trên)
+            drawFrame();
+
+            // Trích xuất luồng video mới từ Canvas với số khung hình/giây tương thích
+            const fps = Math.round(settings.frameRate || 30);
+            recordStream = recordCanvas.captureStream(fps);
+
+            // Giữ lại luồng âm thanh gốc (nếu có) ghép vào luồng Canvas mới để tránh mất tiếng
+            currentStream.getAudioTracks().forEach((track) => {
+              recordStream.addTrack(track);
+            });
+          }
+
+          // CHỌN MIMETYPE PHÙ HỢP ĐỂ TRÁNH LỖI 0-BYTE TRÊN CHROME (WINDOWS)
           let selectedMimeType = "";
-          const types = [
-            "video/mp4;codecs=h264,aac",
-            "video/mp4",
-            "video/webm;codecs=vp9,opus",
-            "video/webm;codecs=vp8,opus",
-            "video/webm",
-          ];
+          let types = [];
+
+          if (isFlippedH || isFlippedV) {
+            // Khi ghi hình qua Canvas (Lật gương), bộ mã hóa MP4 của Chrome trên Windows
+            // bị lỗi không nén được pixel thô từ canvas, gây ra tệp 0-byte bị lỗi.
+            // Ta bắt buộc dùng WebM để đảm bảo thu được file mượt mà, đầy đủ dữ liệu.
+            types = [
+              "video/webm;codecs=vp9,opus",
+              "video/webm;codecs=vp8,opus",
+              "video/webm",
+            ];
+          } else {
+            // Khi tắt lật (ghi luồng camera gốc), MP4 của Chrome chạy cực tốt
+            types = [
+              "video/mp4;codecs=h264,aac",
+              "video/mp4",
+              "video/webm;codecs=vp9,opus",
+              "video/webm;codecs=vp8,opus",
+              "video/webm",
+            ];
+          }
 
           for (let type of types) {
             if (MediaRecorder.isTypeSupported(type)) {
@@ -804,7 +873,7 @@
             videoBitsPerSecond: 8000000,
           };
 
-          mediaRecorder = new MediaRecorder(currentStream, options);
+          mediaRecorder = new MediaRecorder(recordStream, options);
 
           mediaRecorder.ondataavailable = function (event) {
             if (event.data.size > 0) {
@@ -846,7 +915,6 @@
           };
 
           mediaRecorder.start();
-          isRecording = true;
 
           // Bộ đếm giờ (Timer)
           recordStartTime = Date.now();
@@ -875,11 +943,18 @@
           btnRecord.innerHTML = "⏹ Dừng Ghi";
           btnRecord.classList.add("btn-recording-active");
         } catch (e) {
+          isRecording = false; // Trả lại trạng thái nếu có lỗi khởi tạo đột ngột
           alert("Lỗi khi khởi tạo ghi hình: " + e.message);
         }
       }
 
       function stopRecording() {
+        // Hủy vòng lặp vẽ Canvas nếu có để tránh lãng phí RAM/CPU
+        if (canvasRecordRAF) {
+          cancelAnimationFrame(canvasRecordRAF);
+          canvasRecordRAF = null;
+        }
+
         // Hủy bộ đếm thời gian giới hạn 30 giây nếu người dùng nhấn dừng thủ công
         if (recordLimitTimeout) {
           clearTimeout(recordLimitTimeout);
@@ -911,6 +986,14 @@
       let currentStream = null;
       let isFlippedH = false;
       let isFlippedV = false;
+
+      // HÀM LẮNG NGHE PHÍM TẮT: Alt + Shift + R (Windows) / Option + Shift + R (Mac)
+      document.addEventListener("keydown", function (event) {
+        if (event.altKey && event.shiftKey && event.code === "KeyR") {
+          event.preventDefault();
+          toggleRecording();
+        }
+      });
 
       function toggleFlipH() {
         isFlippedH = !isFlippedH;
