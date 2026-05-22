@@ -270,45 +270,213 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
-      /* --- 🎛️ In-Screen Overlays --- */
+      /* --- 🎛️ In-Screen Overlays (FANTASTICAL HUD DESIGN) --- */
       .cam-ui {
         position: absolute;
-        top: 30px;
+        top: 24px;
         width: 100%;
-        padding: 0 40px;
+        padding: 0 24px;
         display: flex;
         justify-content: space-between;
         pointer-events: none;
         font-family: "VT323", monospace;
-        font-size: 32px;
-        color: rgba(255, 255, 255, 0.9);
-        text-shadow: 2px 2px 0px #000;
+        font-size: 26px;
         z-index: 10;
       }
+
+      /* --- 💫 KHUNG CHỨA TIMER VỚI VIỀN LED CHẠY ĐỘNG --- */
       .rec-indicator {
+        position: relative;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        background: rgba(10, 5, 5, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 8px 20px;
+        border-radius: 50px;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;
+      }
+
+      /* Kỹ thuật Mask lót viền phát sáng chạy vòng quanh */
+      .rec-indicator::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 2px; /* Độ dày của viền sáng */
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        background-size: 200% 100%;
+        pointer-events: none;
+        transition: all 0.5s ease;
+      }
+
+      /* 1. Trạng thái LIVE PREVIEW (Sẵn sàng) */
+      .rec-indicator.previewing {
+        color: #ffffff;
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.5),
+          0 0 0px rgba(52, 199, 89, 0);
+        animation: breathingGreenPanel 4s ease-in-out infinite;
+      }
+      .rec-indicator.previewing::after {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #34c759,
+          transparent,
+          #34c759,
+          transparent
+        );
+        background-size: 200% 100%;
+        animation: borderSweep 3.5s linear infinite;
+      }
+
+      /* 2. Trạng thái RECORDING (Cực kỳ nổi bật & Fantastical) */
+      .rec-indicator.recording {
         color: #ff3b30;
+        background: rgba(15, 0, 0, 0.9);
+        box-shadow:
+          0 8px 30px rgba(0, 0, 0, 0.7),
+          0 0 25px rgba(255, 45, 85, 0.5);
+        animation: breathingRedPanel 2s ease-in-out infinite;
       }
-      .rec-dot {
-        width: 16px;
-        height: 16px;
-        background: #ff3b30;
-        border-radius: 50%;
-        box-shadow: 0 0 15px #ff3b30;
-        animation: blink 1.2s ease-in-out infinite;
+      /* Vòng chạy laser tốc độ cao đa sắc đỏ-cam rực rỡ */
+      .rec-indicator.recording::after {
+        background: linear-gradient(
+          90deg,
+          #ff2d55,
+          #ff3b30,
+          #ff9500,
+          #ff2d55,
+          #ff3b30
+        );
+        background-size: 200% 100%;
+        animation: borderSweep 1.8s linear infinite;
       }
-      @keyframes blink {
+
+      /* Keyframes chạy dải sáng vòng quanh viền */
+      @keyframes borderSweep {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: 0 0;
+        }
+      }
+
+      /* Hơi thở hào quang xanh cho Standby */
+      @keyframes breathingGreenPanel {
         0%,
         100% {
-          opacity: 1;
-          transform: scale(1);
+          box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.5),
+            0 0 4px rgba(52, 199, 89, 0.1);
         }
         50% {
-          opacity: 0.4;
-          transform: scale(0.8);
+          box-shadow:
+            0 8px 25px rgba(0, 0, 0, 0.6),
+            0 0 12px rgba(52, 199, 89, 0.35);
         }
+      }
+
+      /* Hơi thở hào quang đỏ neon cho Recording */
+      @keyframes breathingRedPanel {
+        0%,
+        100% {
+          box-shadow:
+            0 8px 25px rgba(0, 0, 0, 0.6),
+            0 0 10px rgba(255, 45, 85, 0.3);
+          background: rgba(15, 0, 0, 0.9);
+        }
+        50% {
+          box-shadow:
+            0 8px 35px rgba(0, 0, 0, 0.8),
+            0 0 25px rgba(255, 45, 85, 0.65);
+          background: rgba(25, 0, 0, 0.95);
+        }
+      }
+
+      /* --- 💡 ĐÈN TÍN HIỆU NHỊP TIM (HEARTBEAT GLOW) --- */
+      .rec-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        transition: all 0.5s ease;
+      }
+
+      /* Đèn xanh tĩnh */
+      .rec-indicator.previewing .rec-dot {
+        background: #34c759;
+        box-shadow: 0 0 12px #34c759;
+        animation: none;
+      }
+
+      /* Đèn nháy đỏ theo nhịp thở dãn nở */
+      .rec-indicator.recording .rec-dot {
+        background: #ff3b30;
+        animation: heartbeatGlow 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
+      }
+
+      @keyframes heartbeatGlow {
+        0% {
+          transform: scale(1);
+          box-shadow: 0 0 8px #ff3b30;
+          opacity: 0.8;
+        }
+        50% {
+          transform: scale(1.35);
+          box-shadow:
+            0 0 22px #ff2d55,
+            0 0 35px #ff3b30;
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 8px #ff3b30;
+          opacity: 0.8;
+        }
+      }
+
+      /* --- ⏱️ ĐỒNG HỒ ĐỒNG BỘ HIỆU ỨNG (SILVER SHIMMER) --- */
+      #liveClock {
+        position: relative;
+        background: rgba(10, 10, 10, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 8px 20px;
+        border-radius: 50px;
+        color: #ffffff;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+      #liveClock::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.5px;
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.35),
+          transparent,
+          rgba(255, 255, 255, 0.35),
+          transparent
+        );
+        background-size: 200% 100%;
+        animation: borderSweep 4.5s linear infinite;
+        pointer-events: none;
       }
 
       .composition-grid {
@@ -621,7 +789,8 @@
     <div class="app-container">
       <div class="preview-wrapper">
         <div class="cam-ui">
-          <div class="rec-indicator" id="recIndicatorUI">
+          <!-- Mặc định khởi chạy ở trạng thái previewing -->
+          <div class="rec-indicator previewing" id="recIndicatorUI">
             <div class="rec-dot"></div>
             <span id="recText">LIVE PREVIEW</span>
           </div>
@@ -852,6 +1021,11 @@
           mediaRecorder.start();
           isRecording = true;
 
+          // Chuyển đổi class của Container sang chế độ RECORDING
+          const recUI = document.getElementById("recIndicatorUI");
+          recUI.classList.remove("previewing");
+          recUI.classList.add("recording");
+
           // Bộ đếm giờ (Timer)
           recordStartTime = Date.now();
           document.getElementById("recText").textContent = "REC • 00:00";
@@ -894,6 +1068,11 @@
           mediaRecorder.stop();
         }
         isRecording = false;
+
+        // Trả lại class Container về chế độ PREVIEWING thông thường
+        const recUI = document.getElementById("recIndicatorUI");
+        recUI.classList.remove("recording");
+        recUI.classList.add("previewing");
 
         // Reset UI Timer
         clearInterval(recordTimerInterval);
