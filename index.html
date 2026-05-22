@@ -635,7 +635,8 @@
           <div></div>
         </div>
 
-        <video id="preview" autoplay playsinline muted></video>
+        <!-- Mặc định thêm class 'flipped' để lật ngang ngay từ đầu -->
+        <video id="preview" class="flipped" autoplay playsinline muted></video>
       </div>
     </div>
 
@@ -645,7 +646,10 @@
     <div class="toolbar" id="toolbar">
       <button id="btnGrid" onclick="toggleGrid()">🔲 Khung Căn Chỉnh</button>
       <button id="btnPerf" onclick="togglePerf()">📊 Thông Số</button>
-      <button id="btnFlipH" onclick="toggleFlipH()">↔️ Ngang</button>
+      <!-- Mặc định thêm class 'active' để nút lật ngang hiển thị trạng thái đang bật -->
+      <button id="btnFlipH" class="active" onclick="toggleFlipH()">
+        ↔️ Ngang
+      </button>
       <button id="btnFlipV" onclick="toggleFlipV()">↕️ Dọc</button>
       <select
         id="cameraSelect"
@@ -909,7 +913,7 @@
       const cameraSelect = document.getElementById("cameraSelect");
 
       let currentStream = null;
-      let isFlippedH = false;
+      let isFlippedH = true; // Đặt mặc định trạng thái ban đầu là bật (true)
       let isFlippedV = false;
 
       function toggleFlipH() {
