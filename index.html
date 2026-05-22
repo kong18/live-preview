@@ -415,7 +415,7 @@
         box-shadow: 0 0 0 2px var(--action-lead) inset;
       }
 
-      /* 🎥 CSS mới cho chức năng Ghi Hình */
+      /* 🎥 CSS cho chức năng Ghi Hình */
       @keyframes recordingPulse {
         0% {
           box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
@@ -431,6 +431,31 @@
         background: #ff3b30 !important;
         color: #ffffff !important;
         animation: recordingPulse 1.5s infinite;
+      }
+
+      /* --- Toast Notification --- */
+      .toast-notification {
+        position: fixed;
+        top: 25px;
+        right: 25px;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text-neutral);
+        border-left: 5px solid var(--action-lead);
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(138, 10, 10, 0.15);
+        font-weight: bold;
+        font-size: 13px;
+        z-index: 10000;
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+      }
+      .toast-notification.show {
+        transform: translateX(0);
       }
 
       /* --- Overlays --- */
@@ -592,22 +617,6 @@
       </div>
     </div>
 
-    <!-- 📽️ Source Selector -->
-    <div id="sourceSelector" class="full-overlay hidden">
-      <div class="overlay-card">
-        <div
-          class="logo-sub"
-          style="margin-bottom: 20px; justify-content: center; background: none"
-        >
-          Choose Source
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px">
-          <button onclick="startCamera()">📷 Camera (Capture Card)</button>
-          <button onclick="startScreen()">🖥️ Share Screen</button>
-        </div>
-      </div>
-    </div>
-
     <!-- 📸 Main Layout -->
     <div class="app-container">
       <div class="preview-wrapper">
@@ -647,9 +656,29 @@
       <!-- Nút Ghi Hình Mới -->
       <button id="btnRecord" onclick="toggleRecording()">🔴 Ghi Hình</button>
 
+      <!-- 🔄 Nguồn -->
       <button onclick="changeSource()">🔄 Nguồn</button>
       <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
+
+    <!-- 🔑 Source Selector -->
+    <div id="sourceSelector" class="full-overlay hidden">
+      <div class="overlay-card">
+        <div
+          class="logo-sub"
+          style="margin-bottom: 20px; justify-content: center; background: none"
+        >
+          Choose Source
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <button onclick="startCamera()">📷 Camera (Capture Card)</button>
+          <button onclick="startScreen()">🖥️ Share Screen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastNotification" class="toast-notification"></div>
 
     <script>
       /* =======================================================
@@ -700,15 +729,16 @@
       }
 
       /* =======================================================
-           3. VIDEO RECORDING FEATURE (FIXED METADATA & SYNC)
+           3. VIDEO RECORDING FEATURE (30s LIMIT & NOTIFICATION)
            ======================================================= */
       let mediaRecorder = null;
       let recordedChunks = [];
       let isRecording = false;
 
-      // Biến phục vụ Timer
+      // Biến phục vụ Timer & Giới hạn 30 giây
       let recordStartTime = 0;
       let recordTimerInterval = null;
+      let recordLimitTimeout = null; // Quản lý thời gian tự động dừng
 
       // Hàm format giây sang MM:SS hoặc HH:MM:SS
       function formatTime(totalSeconds) {
@@ -721,6 +751,17 @@
           .padStart(2, "0");
         if (h > 0) return `${h.toString().padStart(2, "0")}:${m}:${s}`;
         return `${m}:${s}`;
+      }
+
+      // Hàm hiển thị thông báo thân thiện tự động ẩn sau 3 giây
+      function showNotification(message) {
+        const toast = document.getElementById("toastNotification");
+        toast.innerHTML = `<span>🎥</span> <span>${message}</span>`;
+        toast.classList.add("show");
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
       }
 
       function toggleRecording() {
@@ -741,7 +782,7 @@
       function startRecording() {
         recordedChunks = [];
         try {
-          // 1. ƯU TIÊN MP4 (Chrome mới hỗ trợ native MP4, khắc phục 100% lỗi WebM trên Windows)
+          // 1. ƯU TIÊN MP4 (Khắc phục lỗi WebM trên Windows)
           let selectedMimeType = "";
           const types = [
             "video/mp4;codecs=h264,aac",
@@ -758,8 +799,6 @@
             }
           }
 
-          // 2. TỐI ƯU HIỆU SUẤT TRÁNH RỚT FRAME (DROP FRAMES)
-          // Mức 8 Mbps (8000000) là cực nét nhưng vẫn an toàn để CPU không bị quá tải.
           const options = {
             mimeType: selectedMimeType,
             videoBitsPerSecond: 8000000,
@@ -802,14 +841,10 @@
                 triggerDownload(fixedBlob);
               });
             } else {
-              // Nếu trình duyệt hỗ trợ MP4, tải thẳng file gốc!
               triggerDownload(rawBlob);
             }
           };
 
-          // 3. QUAN TRỌNG: BỎ SỐ (1000) Ở LỆNH START!
-          // Việc loại bỏ cắt chunk theo giây giúp trình duyệt tự sắp xếp Keyframe chuẩn xác,
-          // giải quyết triệt để tình trạng lệch thời lượng và hỏng Timeline Cues.
           mediaRecorder.start();
           isRecording = true;
 
@@ -825,6 +860,16 @@
               `REC • ${formatTime(elapsedSec)}`;
           }, 1000);
 
+          // TỰ ĐỘNG DỪNG GHI VÀO MỐC 30 GIÂY
+          recordLimitTimeout = setTimeout(() => {
+            if (isRecording) {
+              stopRecording();
+              showNotification(
+                "Đã đủ 30s! Video đang được tải xuống tự động. ✨",
+              );
+            }
+          }, 30000);
+
           // Đổi UI Nút
           const btnRecord = document.getElementById("btnRecord");
           btnRecord.innerHTML = "⏹ Dừng Ghi";
@@ -835,6 +880,12 @@
       }
 
       function stopRecording() {
+        // Hủy bộ đếm thời gian giới hạn 30 giây nếu người dùng nhấn dừng thủ công
+        if (recordLimitTimeout) {
+          clearTimeout(recordLimitTimeout);
+          recordLimitTimeout = null;
+        }
+
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
           mediaRecorder.stop();
         }
@@ -878,7 +929,7 @@
       }
 
       function stopStream() {
-        // [SAFETY HOOK] Tự động dừng quay và lưu video nếu tắt camera đột ngột
+        // Tự động dừng quay và lưu video nếu tắt nguồn camera đột ngột
         if (isRecording) {
           stopRecording();
         }
