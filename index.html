@@ -3,18 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Filmong Live Preview Pro</title>
+    <title>Filmong Photobooth Pro Live Monitor</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=VT323&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
-        --surface-primary: #f3d8e6;
-        --action-lead: #8a0a0a;
-        --action-glow: rgba(138, 10, 10, 0.4);
+        --surface-primary: #fcf1f4; /* Cozy warm soft pink-cream background */
+        --action-lead: #ff4b6b; /* Vibrant Warm Pink original essence */
+        --action-glow: rgba(255, 75, 107, 0.25);
         --surface-white: #ffffff;
-        --text-neutral: #1a1a1a;
+        --text-neutral: #3d0813; /* Elegant rich deep burgundy-brown text */
+        --text-secondary: #8e5864; /* Soft warm mauve-rose text */
+        --glass-border: rgba(255, 75, 107, 0.15);
+        --glass-border-focus: rgba(255, 75, 107, 0.35);
+        --font-sans: "Plus Jakarta Sans", sans-serif;
+        --font-mono: "Space Grotesk", sans-serif;
       }
 
       * {
@@ -27,12 +32,12 @@
       body {
         background-color: var(--surface-primary);
         background-image: radial-gradient(
-          rgba(138, 10, 10, 0.08) 2px,
-          transparent 2px
+          rgba(255, 75, 107, 0.05) 1.5px,
+          transparent 1.5px
         );
         background-size: 30px 30px;
         color: var(--text-neutral);
-        font-family: "Montserrat", sans-serif;
+        font-family: var(--font-sans);
         overflow: hidden;
         height: 100vh;
         display: flex;
@@ -41,48 +46,56 @@
         transition: background-color 0.5s ease;
       }
 
-      /* --- FULLSCREEN THEME OVERRIDES --- */
+      /* GIỮ NGUYÊN NỀN SÁNG HỒNG KEM KHI TOÀN MÀN HÌNH */
       body.fullscreen-mode {
-        background-color: #000000;
-        background-image: none;
+        background-color: var(--surface-primary);
+        background-image: radial-gradient(
+          rgba(255, 75, 107, 0.05) 1.5px,
+          transparent 1.5px
+        );
+        background-size: 30px 30px;
       }
 
-      /* --- 🌀 KINETIC TYPOGRAPHY --- */
+      /* --- 🌀 KINETIC TYPOGRAPHY BACKGROUND --- */
       .ambient-container {
         position: absolute;
         top: 0;
         bottom: 0;
-        width: 12vw;
+        width: 10vw;
         overflow: hidden;
         z-index: 0;
         pointer-events: none;
         user-select: none;
+        display: flex;
+        align-items: center;
       }
       .ambient-left {
-        left: 0;
+        left: 20px;
       }
       .ambient-right {
-        right: 0;
+        right: 20px;
       }
 
       .ambient-track {
         display: flex;
         flex-direction: column;
-        gap: 20px;
-        font-size: 15vw;
-        font-weight: 900;
-        color: rgba(138, 10, 10, 0.04);
+        gap: 30px;
+        font-family: var(--font-mono);
+        font-size: 6vw;
+        font-weight: 700;
+        color: rgba(255, 75, 107, 0.015);
         writing-mode: vertical-rl;
         text-orientation: mixed;
         height: 200vh;
+        letter-spacing: -2px;
       }
 
       .ambient-left .ambient-track {
         transform: rotate(180deg);
-        animation: scrollMarquee 40s linear infinite;
+        animation: scrollMarquee 45s linear infinite;
       }
       .ambient-right .ambient-track {
-        animation: scrollMarqueeRight 40s linear infinite;
+        animation: scrollMarqueeRight 45s linear infinite;
       }
 
       @keyframes scrollMarquee {
@@ -102,65 +115,71 @@
         }
       }
 
-      /* --- ✨ UPGRADED FILMONG BRANDING --- */
+      /* --- 🏷️ FILMONG PHOTOBOOTH BRANDING HEADER --- */
       .brand-header {
         position: fixed;
-        top: 25px;
+        top: 30px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
         align-items: center;
-        gap: 15px;
-        background: rgba(255, 255, 255, 0.5);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        padding: 10px 25px 10px 30px;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+        padding: 8px 24px;
         border-radius: 100px;
         box-shadow:
-          0 15px 35px rgba(138, 10, 10, 0.08),
-          inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-        z-index: 100;
-        pointer-events: none;
-        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          0 12px 40px rgba(255, 75, 107, 0.06),
+          inset 0 1px 1px rgba(255, 255, 255, 0.5);
+        z-index: 150;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 1;
       }
 
-      .fullscreen-mode .brand-header {
-        opacity: 0;
-        transform: translate(-50%, -150%);
+      .brand-header.hidden-brand {
+        opacity: 0 !important;
+        transform: translate(-50%, -30px) scale(0.95);
+        pointer-events: none;
       }
 
       .logo-main {
-        font-weight: 900;
-        font-size: 28px;
-        letter-spacing: 1px;
-        background: linear-gradient(135deg, #8a0a0a 0%, #e94560 100%);
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: -0.5px;
+        background: linear-gradient(
+          135deg,
+          var(--text-neutral) 0%,
+          var(--action-lead) 100%
+        );
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0px 2px 4px rgba(138, 10, 10, 0.2));
-        line-height: 1;
       }
 
       .logo-sub {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-weight: 800;
-        font-size: 11px;
-        letter-spacing: 2px;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 1px;
         color: var(--action-lead);
         text-transform: uppercase;
-        background: rgba(138, 10, 10, 0.06);
-        padding: 6px 14px;
+        background: rgba(255, 75, 107, 0.08);
+        padding: 4px 10px;
         border-radius: 50px;
+        border: 1px solid rgba(255, 75, 107, 0.12);
       }
 
       .brand-live-dot {
-        width: 8px;
-        height: 8px;
-        background: #ff3b30;
+        width: 6px;
+        height: 6px;
+        background: var(--action-lead);
         border-radius: 50%;
-        box-shadow: 0 0 10px #ff3b30;
+        box-shadow: 0 0 8px var(--action-lead);
         animation: pulseBrand 1.5s infinite;
       }
       @keyframes pulseBrand {
@@ -170,30 +189,31 @@
           transform: scale(1);
         }
         50% {
-          opacity: 0.5;
-          transform: scale(0.8);
+          opacity: 0.4;
+          transform: scale(0.85);
         }
       }
 
-      /* --- 📊 Performance Monitor --- */
+      /* --- 📊 PERFORMANCE MONITOR --- */
       .perf-monitor {
         position: fixed;
-        top: 25px;
-        right: 25px;
-        background: rgba(0, 0, 0, 0.75);
-        color: #00ff00;
-        font-family: "Courier New", monospace;
+        top: 30px;
+        right: 30px;
+        background: var(--surface-white);
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
         font-size: 11px;
-        font-weight: bold;
-        padding: 10px 14px;
-        border-radius: 8px;
-        border: 1px solid rgba(0, 255, 0, 0.3);
+        padding: 10px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
         z-index: 150;
-        backdrop-filter: blur(5px);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
         pointer-events: none;
         display: flex;
         flex-direction: column;
         gap: 6px;
+        box-shadow: 0 10px 30px rgba(255, 75, 107, 0.05);
         transition:
           opacity 0.4s ease,
           transform 0.4s ease;
@@ -205,86 +225,54 @@
       .perf-monitor span {
         display: flex;
         justify-content: space-between;
-        gap: 20px;
+        gap: 16px;
+      }
+      .perf-monitor b {
+        color: var(--text-neutral);
       }
 
-      /* --- 📽️ Main Spatial Layout & BREATHING GLOW --- */
+      /* --- 📽️ MAIN LAYOUT --- */
       .app-container {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 80px 40px 100px 40px;
+        padding: 100px 60px 120px 60px;
         width: 100%;
         z-index: 10;
-        transition: padding 0.5s ease;
-      }
-
-      .fullscreen-mode .app-container {
-        padding: 0;
+        transition: padding 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .preview-wrapper {
         position: relative;
         width: 100%;
         height: 100%;
-        max-width: 1400px;
+        max-width: 1440px;
         aspect-ratio: 16/9;
-        border-radius: 24px;
-        border: 8px solid var(--surface-white);
+        border-radius: 28px;
+        border: 1px solid var(--glass-border);
         background: #000;
-        animation: studioBreathing 4s ease-in-out infinite;
-        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow:
+          0 30px 80px rgba(61, 8, 19, 0.08),
+          0 0 0 1px rgba(255, 75, 107, 0.03),
+          0 0 40px rgba(255, 75, 107, 0.05);
       }
 
       .video-container-inner {
         position: relative;
         width: 100%;
         height: 100%;
-        border-radius: inherit;
+        border-radius: 27px;
         overflow: hidden;
         transition: all 0.5s ease;
-      }
-
-      /* FULLSCREEN LAYOUT OVERRIDES */
-      .fullscreen-mode .preview-wrapper {
-        border: none;
-        border-radius: 0;
-        max-width: 100%;
-        height: 100vh;
-        background: #000000;
-        box-shadow: none;
-        padding: 0;
-        animation: none;
-      }
-
-      .fullscreen-mode .video-container-inner {
-        border: none;
-        border-radius: 0;
-        background: transparent;
-      }
-
-      @keyframes studioBreathing {
-        0%,
-        100% {
-          box-shadow:
-            0 20px 50px rgba(138, 10, 10, 0.1),
-            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
-            0 0 0px var(--action-glow);
-        }
-        50% {
-          box-shadow:
-            0 30px 60px rgba(138, 10, 10, 0.2),
-            inset 0 0 0 1px rgba(0, 0, 0, 0.2),
-            0 0 40px var(--action-glow);
-        }
       }
 
       #preview {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       }
       #preview.flipped {
         transform: scaleX(-1);
@@ -296,50 +284,211 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
-      /* --- 🎛️ SIMPLE PLAYER UI --- */
+      /* --- 📷 LENS HUD ELEMENT OVERLAYS (Windowed Mode Layout) --- */
+      .camera-hud-corners {
+        position: absolute;
+        inset: 24px;
+        pointer-events: none;
+        z-index: 6;
+      }
+      .camera-hud-corners::before,
+      .camera-hud-corners::after,
+      .camera-hud-corners-bottom::before,
+      .camera-hud-corners-bottom::after {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-color: rgba(255, 75, 107, 0.35);
+        border-style: solid;
+        transition: border-color 0.3s ease;
+      }
+      .camera-hud-corners::before {
+        top: 0;
+        left: 0;
+        border-width: 3px 0 0 3px;
+      }
+      .camera-hud-corners::after {
+        top: 0;
+        right: 0;
+        border-width: 3px 3px 0 0;
+      }
+
+      .camera-hud-corners-bottom {
+        position: absolute;
+        inset: 24px;
+        pointer-events: none;
+        z-index: 6;
+      }
+      .camera-hud-corners-bottom::before {
+        bottom: 0;
+        left: 0;
+        border-width: 0 0 3px 3px;
+      }
+      .camera-hud-corners-bottom::after {
+        bottom: 0;
+        right: 0;
+        border-width: 0 3px 3px 0;
+      }
+
+      .preview-wrapper:has(#recIndicatorUI.recording)
+        .camera-hud-corners::before,
+      .preview-wrapper:has(#recIndicatorUI.recording)
+        .camera-hud-corners::after,
+      .preview-wrapper:has(#recIndicatorUI.recording)
+        .camera-hud-corners-bottom::before,
+      .preview-wrapper:has(#recIndicatorUI.recording)
+        .camera-hud-corners-bottom::after {
+        border-color: var(--action-lead);
+      }
+
+      /* --- 🎛️ IN-SCREEN LIVE OVERLAYS --- */
+      .cam-ui {
+        position: absolute;
+        top: 24px;
+        width: 100%;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10;
+        align-items: center;
+      }
+
+      .rec-indicator {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 8px 18px;
+        border-radius: 100px;
+        border: 1px solid var(--glass-border);
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        color: var(--text-neutral);
+      }
+      .rec-indicator.previewing {
+        box-shadow: 0 8px 24px rgba(61, 8, 19, 0.05);
+      }
+      .rec-indicator.recording {
+        color: var(--action-lead);
+        background: rgba(255, 241, 244, 0.95);
+        border-color: rgba(255, 75, 107, 0.3);
+        box-shadow:
+          0 8px 30px rgba(255, 75, 107, 0.15),
+          0 0 20px rgba(255, 75, 107, 0.1);
+        animation: breathingRedPanel 3s ease-in-out infinite;
+      }
+
+      @keyframes breathingRedPanel {
+        0%,
+        100% {
+          box-shadow:
+            0 8px 25px rgba(255, 75, 107, 0.1),
+            0 0 10px rgba(255, 75, 107, 0.15);
+        }
+        50% {
+          box-shadow:
+            0 8px 35px rgba(255, 75, 107, 0.15),
+            0 0 22px rgba(255, 75, 107, 0.35);
+        }
+      }
+
+      .rec-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        transition: all 0.4s ease;
+      }
+      .rec-indicator.previewing .rec-dot {
+        background: var(--action-lead);
+        box-shadow: 0 0 8px var(--action-lead);
+      }
+      .rec-indicator.recording .rec-dot {
+        background: #ff3b30;
+        animation: heartbeatGlow 1.2s cubic-bezier(0.215, 0.61, 0.355, 1)
+          infinite;
+      }
+
+      @keyframes heartbeatGlow {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 6px #ff3b30;
+        }
+        50% {
+          transform: scale(1.3);
+          box-shadow: 0 0 16px #ff3b30;
+        }
+      }
+
+      #liveClock {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 8px 18px;
+        border-radius: 100px;
+        color: var(--text-neutral);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 24px rgba(61, 8, 19, 0.05);
+      }
+
+      .composition-grid {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr;
+        z-index: 5;
+      }
+
+      .composition-grid div {
+        border: 0.5px dashed transparent;
+        transition: border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .composition-grid.visible div {
+        border-color: rgba(255, 75, 107, 0.25);
+      }
+
+      /* --- ⏱️ SIMPLE PLAYER TIMELINE OVERLAY --- */
       .simple-player-ui {
         display: none;
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
-        padding: 60px 2.5% 25px 2.5%; /* Creates the 95% width feel with cinematic dark gradient */
+        padding: 60px 40px 32px 40px;
         background: linear-gradient(
           to top,
-          rgba(0, 0, 0, 0.85) 0%,
+          rgba(0, 0, 0, 0.9) 0%,
           rgba(0, 0, 0, 0) 100%
         );
         z-index: 20;
-        font-family: "Montserrat", sans-serif;
-      }
-
-      .fullscreen-mode .simple-player-ui {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
       }
 
       .player-text-row {
         display: flex;
         justify-content: space-between;
         color: #ffffff;
-        font-family: "VT323", monospace;
-        font-size: 1.625rem;
+        font-family: var(--font-mono);
+        font-size: 14px;
         font-weight: 500;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-        padding: 0 2px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
       }
-
       .player-title {
-        opacity: 0.95;
+        opacity: 0.8;
       }
-
       .player-time {
-        opacity: 0.95;
+        opacity: 0.9;
         font-variant-numeric: tabular-nums;
       }
 
-      /* CSS Animated Time */
       @property --sec {
         syntax: "<integer>";
         initial-value: 0;
@@ -353,37 +502,25 @@
         animation: countUp 30s linear forwards;
         counter-reset: sec var(--sec);
       }
-      @keyframes countUp {
-        from {
-          --sec: 0;
-        }
-        to {
-          --sec: 30;
-        }
-      }
 
       .player-timeline-bg {
         width: 100%;
-        height: 5px;
-        background: rgba(255, 255, 255, 0.25);
-        border-radius: 4px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 100px;
         overflow: hidden;
       }
-
       .player-timeline-fill {
         height: 100%;
         width: 0%;
-        background: #ffffff;
-        border-radius: 4px;
+        background: var(--action-lead);
+        border-radius: 100px;
         transition: background 0.3s ease;
       }
-
-      /* Highlight the track with recording red when active */
       .preview-wrapper:has(#recIndicatorUI.recording) .player-timeline-fill {
-        background: #ff3b30;
+        background: var(--action-lead);
         animation: simpleTimerFill 30s linear forwards;
       }
-
       @keyframes simpleTimerFill {
         from {
           width: 0%;
@@ -393,234 +530,23 @@
         }
       }
 
-      /* --- 🎛️ In-Screen Overlays --- */
-      .cam-ui {
-        position: absolute;
-        top: 24px;
-        width: 100%;
-        padding: 0 24px;
-        display: flex;
-        justify-content: space-between;
-        pointer-events: none;
-        font-family: "VT323", monospace;
-        font-size: 26px;
-        z-index: 10;
-      }
-
-      .rec-indicator {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: rgba(10, 5, 5, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        padding: 8px 20px;
-        border-radius: 50px;
-        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        overflow: hidden;
-      }
-
-      .rec-indicator::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        padding: 2px;
-        -webkit-mask:
-          linear-gradient(#fff 0 0) content-box,
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        background-size: 200% 100%;
-        pointer-events: none;
-        transition: all 0.5s ease;
-      }
-
-      .rec-indicator.previewing {
-        color: #ffffff;
-        box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.5),
-          0 0 0px rgba(52, 199, 89, 0);
-        animation: breathingGreenPanel 4s ease-in-out infinite;
-      }
-      .rec-indicator.previewing::after {
-        background: linear-gradient(
-          90deg,
-          transparent,
-          #34c759,
-          transparent,
-          #34c759,
-          transparent
-        );
-        background-size: 200% 100%;
-        animation: borderSweep 3.5s linear infinite;
-      }
-
-      .rec-indicator.recording {
-        color: #ff3b30;
-        background: rgba(15, 0, 0, 0.9);
-        box-shadow:
-          0 8px 30px rgba(0, 0, 0, 0.7),
-          0 0 25px rgba(255, 45, 85, 0.5);
-        animation: breathingRedPanel 2s ease-in-out infinite;
-      }
-      .rec-indicator.recording::after {
-        background: linear-gradient(
-          90deg,
-          #ff2d55,
-          #ff3b30,
-          #ff9500,
-          #ff2d55,
-          #ff3b30
-        );
-        background-size: 200% 100%;
-        animation: borderSweep 1.8s linear infinite;
-      }
-
-      @keyframes borderSweep {
-        0% {
-          background-position: 200% 0;
-        }
-        100% {
-          background-position: 0 0;
-        }
-      }
-
-      @keyframes breathingGreenPanel {
-        0%,
-        100% {
-          box-shadow:
-            0 8px 20px rgba(0, 0, 0, 0.5),
-            0 0 4px rgba(52, 199, 89, 0.1);
-        }
-        50% {
-          box-shadow:
-            0 8px 25px rgba(0, 0, 0, 0.6),
-            0 0 12px rgba(52, 199, 89, 0.35);
-        }
-      }
-
-      @keyframes breathingRedPanel {
-        0%,
-        100% {
-          box-shadow:
-            0 8px 25px rgba(0, 0, 0, 0.6),
-            0 0 10px rgba(255, 45, 85, 0.3);
-          background: rgba(15, 0, 0, 0.9);
-        }
-        50% {
-          box-shadow:
-            0 8px 35px rgba(0, 0, 0, 0.8),
-            0 0 25px rgba(255, 45, 85, 0.65);
-          background: rgba(25, 0, 0, 0.95);
-        }
-      }
-
-      .rec-dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        transition: all 0.5s ease;
-      }
-
-      .rec-indicator.previewing .rec-dot {
-        background: #34c759;
-        box-shadow: 0 0 12px #34c759;
-        animation: none;
-      }
-
-      .rec-indicator.recording .rec-dot {
-        background: #ff3b30;
-        animation: heartbeatGlow 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
-      }
-
-      @keyframes heartbeatGlow {
-        0% {
-          transform: scale(1);
-          box-shadow: 0 0 8px #ff3b30;
-          opacity: 0.8;
-        }
-        50% {
-          transform: scale(1.35);
-          box-shadow:
-            0 0 22px #ff2d55,
-            0 0 35px #ff3b30;
-          opacity: 1;
-        }
-        100% {
-          transform: scale(1);
-          box-shadow: 0 0 8px #ff3b30;
-          opacity: 0.8;
-        }
-      }
-
-      #liveClock {
-        position: relative;
-        background: rgba(10, 10, 10, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        padding: 8px 20px;
-        border-radius: 50px;
-        color: #ffffff;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-        overflow: hidden;
-      }
-      #liveClock::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        padding: 1.5px;
-        -webkit-mask:
-          linear-gradient(#fff 0 0) content-box,
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.35),
-          transparent,
-          rgba(255, 255, 255, 0.35),
-          transparent
-        );
-        background-size: 200% 100%;
-        animation: borderSweep 4.5s linear infinite;
-        pointer-events: none;
-      }
-
-      .composition-grid {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        z-index: 5;
-      }
-      .composition-grid div {
-        border: 1px dashed rgba(255, 255, 255, 0);
-        transition: border-color 0.6s ease;
-      }
-      .composition-grid.visible div {
-        border-color: rgba(255, 255, 255, 0.4);
-      }
-
-      /* --- 🛠️ Toolbar --- */
+      /* --- 🛠️ CONTROL TOOLBAR --- */
       .toolbar {
         position: fixed;
-        bottom: 30px; /* Essential to stay inside the 100px JS mousemove trigger zone */
+        bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 10px;
-        padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(15px);
+        gap: 8px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
         border-radius: 100px;
-        border: 1px solid rgba(138, 10, 10, 0.1);
-        box-shadow: 0 15px 35px rgba(138, 10, 10, 0.15);
+        border: 1px solid var(--glass-border);
+        box-shadow:
+          0 15px 35px rgba(61, 8, 19, 0.05),
+          inset 0 1px 1px rgba(255, 255, 255, 0.8);
         z-index: 100;
         transition:
           transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
@@ -629,125 +555,117 @@
         white-space: nowrap;
       }
 
-      .fullscreen-mode .toolbar {
-        transform: translate(-50%, 150%);
-        opacity: 0;
-      }
-      .fullscreen-mode .toolbar.show-toolbar {
-        transform: translate(-50%, 0);
-        opacity: 1;
-      }
-
       button,
       select {
         position: relative;
         overflow: hidden;
-        background: var(--action-lead);
-        color: white;
-        border: none;
-        border-radius: 999px;
-        padding: 12px 20px;
+        background: transparent;
+        color: var(--text-neutral);
+        border: 1px solid transparent;
+        border-radius: 100px;
+        padding: 10px 18px;
+        font-family: var(--font-sans);
         font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
+        font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         justify-content: center;
+        outline: none;
       }
 
-      button::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(
-          to right,
-          rgba(255, 255, 255, 0) 0%,
-          rgba(255, 255, 255, 0.4) 50%,
-          rgba(255, 255, 255, 0) 100%
-        );
-        transform: skewX(-20deg);
-        transition: 0.6s ease;
+      select {
+        appearance: none;
+        padding-right: 28px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ff4b6b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+        color: var(--text-neutral);
       }
-      button:hover::after {
-        left: 150%;
-      }
-      button:hover:not(:disabled) {
-        box-shadow: 0 8px 20px rgba(138, 10, 10, 0.3);
-        transform: translateY(-2px);
+
+      button:hover:not(:disabled),
+      select:hover:not(:disabled) {
+        background: rgba(255, 75, 107, 0.08);
+        border-color: var(--glass-border-focus);
       }
       button:active:not(:disabled) {
-        transform: translateY(1px) scale(0.95);
-        filter: brightness(0.9);
-      }
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+        transform: scale(0.96);
       }
       button.active {
-        background: white;
+        background: rgba(255, 75, 107, 0.12);
+        border-color: var(--glass-border-focus);
         color: var(--action-lead);
-        box-shadow: 0 0 0 2px var(--action-lead) inset;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      button.btn-recording-active {
+        background: var(--action-lead) !important;
+        color: #ffffff !important;
+        border-color: transparent !important;
+        box-shadow: 0 0 15px var(--action-glow);
+        animation: recordingPulse 2s infinite;
       }
 
       @keyframes recordingPulse {
         0% {
-          box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
+          box-shadow: 0 0 0 0 rgba(255, 75, 107, 0.6);
         }
         70% {
-          box-shadow: 0 0 0 10px rgba(255, 59, 48, 0);
+          box-shadow: 0 0 0 10px rgba(255, 75, 107, 0);
         }
         100% {
-          box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+          box-shadow: 0 0 0 0 rgba(255, 75, 107, 0);
         }
       }
-      button.btn-recording-active {
-        background: #ff3b30 !important;
-        color: #ffffff !important;
-        animation: recordingPulse 1.5s infinite;
-      }
 
-      /* --- Toast Notification --- */
+      /* --- 📢 TOAST SYSTEM --- */
       .toast-notification {
         position: fixed;
-        top: 25px;
-        right: 0px;
-        background: rgba(255, 255, 255, 0.95);
+        bottom: 110px;
+        right: 30px;
+        background: var(--surface-white);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
         color: var(--text-neutral);
-        border-left: 5px solid var(--action-lead);
-        padding: 16px 24px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(138, 10, 10, 0.15);
-        font-weight: bold;
+        border: 1px solid var(--glass-border);
+        border-left: 4px solid var(--action-lead);
+        padding: 14px 20px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(61, 8, 19, 0.05);
+        font-weight: 500;
         font-size: 13px;
         z-index: 10000;
-        transform: translateX(120%);
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform: translateY(20px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         align-items: center;
-        gap: 12px;
-        pointer-events: none;
+        gap: 10px;
       }
       .toast-notification.show {
-        transform: translateX(0);
+        transform: translateY(0);
+        opacity: 1;
       }
 
-      /* --- Overlays --- */
+      /* --- 🛡️ FULL-SCREEN OVERLAYS (GLASSMORPHISM) --- */
       .full-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(243, 216, 230, 0.95);
-        backdrop-filter: blur(10px);
+        background: rgba(11, 7, 8, 0.85);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
         z-index: 1000;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .full-overlay.hidden {
         opacity: 0;
@@ -755,19 +673,22 @@
       }
 
       .overlay-card {
-        background: var(--surface-white);
-        padding: 50px;
-        border-radius: 24px;
-        border: 1px solid rgba(138, 10, 10, 0.2);
+        background: rgba(252, 241, 244, 0.95);
+        border: 1px solid var(--glass-border);
+        padding: 40px;
+        border-radius: 32px;
         text-align: center;
-        width: 450px;
-        box-shadow: 0 40px 80px rgba(138, 10, 10, 0.2);
-        animation: cardEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        width: 100%;
+        max-width: 440px;
+        box-shadow:
+          0 40px 100px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       }
       @keyframes cardEntrance {
         0% {
           opacity: 0;
-          transform: scale(0.8) translateY(20px);
+          transform: scale(0.95) translateY(10px);
         }
         100% {
           opacity: 1;
@@ -777,77 +698,396 @@
 
       #licenseKey {
         width: 100%;
-        padding: 15px;
+        background: rgba(255, 255, 255, 0.6);
+        padding: 16px;
         border-radius: 100px;
-        border: 2px solid rgba(138, 10, 10, 0.3);
+        border: 1px solid var(--glass-border);
         text-align: center;
-        margin: 20px 0 10px 0;
-        font-weight: bold;
-        font-family: "Courier New", monospace;
-        font-size: 16px;
-        color: var(--action-lead);
-        transition: border-color 0.3s;
+        margin: 24px 0 12px 0;
+        font-weight: 700;
+        font-family: var(--font-mono);
+        font-size: 15px;
+        letter-spacing: 1px;
+        color: var(--text-neutral);
         outline: none;
+        transition: all 0.3s ease;
       }
       #licenseKey:focus {
-        border-color: var(--action-lead);
+        border-color: var(--glass-border-focus);
+        box-shadow: 0 0 15px rgba(255, 75, 107, 0.15);
       }
 
       .license-status {
-        font-weight: 700;
-        font-size: 12px;
-        margin-top: 10px;
+        font-weight: 600;
+        font-size: 11px;
+        margin-top: 14px;
         display: block;
-        color: #2d6a4f;
+        color: #10b981;
+        letter-spacing: 0.5px;
       }
       .trial-hint {
         font-size: 11px;
-        color: var(--text-neutral);
-        margin-top: 15px;
+        color: var(--text-secondary);
+        margin-top: 16px;
         display: block;
-        font-weight: 600;
+        font-weight: 500;
+      }
+
+      .source-btn-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .source-btn-container button {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid var(--glass-border);
+        padding: 14px;
+        font-size: 13px;
+        justify-content: flex-start;
+      }
+      .source-btn-container button:hover {
+        background: rgba(255, 75, 107, 0.08);
+        border-color: var(--glass-border-focus);
+      }
+
+      /* =======================================================
+         📺 FULLSCREEN INTERFACE INTEGRATION (COHESIVE VIEWPORT FRAME)
+         ======================================================= */
+
+      .fullscreen-mode .app-container {
+        padding: 0;
+        margin: 0;
+        height: 100vh;
+        width: 100vw;
+        background-color: var(--surface-primary);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 🌟 100% FULL SCALE: Tràn viền tuyệt đối, clipping chuẩn */
+      .fullscreen-mode .preview-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000000;
+        max-width: none;
+        aspect-ratio: auto;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        z-index: 1;
+        overflow: hidden; /* Cắt gọn gàng các chi tiết tràn ra ngoài */
+        box-sizing: border-box;
+      }
+
+      /* 🌀 KHUNG KẾT NỐI: Đường 1px mờ bao quanh viền chính xác bằng INSET 0 (Hết bị hở lề) */
+      .fullscreen-mode .preview-wrapper::before {
+        content: "";
+        position: absolute;
+        inset: 0; /* KHÔNG PADDING, bám sát mép tuyệt đối */
+        border: 1px solid rgba(255, 75, 107, 0.2);
+        pointer-events: none;
+        z-index: 8;
+        box-sizing: border-box;
+      }
+
+      /* Đường lưới phụ kỹ thuật ngầm phía trong */
+      .fullscreen-mode .video-container-inner::before {
+        content: "";
+        position: absolute;
+        inset: 0; /* Mở rộng toàn bộ lưới để khớp */
+        border: 1px dashed rgba(255, 75, 107, 0.08);
+        pointer-events: none;
+        z-index: 8;
+        box-sizing: border-box;
+      }
+
+      /* 🖤 LỚP PHỦ GRADIENT BÓNG TỐI ĐIỆN ẢNH: Đảm bảo nổi bật chữ */
+      .fullscreen-mode::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 140px;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.65) 0%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        pointer-events: none;
+        z-index: 9;
+      }
+      .fullscreen-mode::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 140px;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.65) 0%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        pointer-events: none;
+        z-index: 9;
+      }
+
+      .fullscreen-mode .video-container-inner {
+        border: none;
+        border-radius: 0;
+        box-sizing: border-box;
+      }
+
+      /* Đảm bảo camera tràn đầy 100% màn hình */
+      .fullscreen-mode #preview {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+        background-color: #000000;
+      }
+
+      /* ⚖️ Bố cục đối xứng 3 cột tách rời lề (Giữ padding để an toàn trên Tivi) */
+      .fullscreen-mode .cam-ui {
+        position: absolute;
+        top: 40px;
+        left: 40px;
+        width: calc(100% - 80px);
+        padding: 0;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        z-index: 100;
+      }
+
+      /* 🖤 Khung thông tin thương hiệu */
+      .fullscreen-mode .brand-header {
+        position: fixed;
+        top: 40px;
+        left: 40px;
+        transform: none;
+        z-index: 110;
+        opacity: 1;
+        margin: 0;
+
+        background: rgba(15, 10, 12, 0.35) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow:
+          0 12px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        padding: 8px 20px;
+        border-radius: 100px;
+      }
+
+      .fullscreen-mode .logo-main {
+        background: linear-gradient(135deg, #ffffff 0%, var(--action-lead) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .fullscreen-mode .logo-sub {
+        background: rgba(255, 75, 107, 0.2) !important;
+        border-color: rgba(255, 75, 107, 0.3) !important;
+        color: var(--action-lead) !important;
+      }
+
+      /* 🖤 2. Chỉ báo ghi hình trung tâm (Top Center) */
+      .fullscreen-mode .rec-indicator {
+        grid-column: 2;
+        justify-self: center;
+        background: rgba(15, 10, 12, 0.35) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow:
+          0 12px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        padding: 10px 24px !important;
+        color: #ffffff !important;
+      }
+
+      /* 🔴 Giữ độ trong suốt mờ ảo khi bấm Ghi hình (Recording Active) */
+      .fullscreen-mode .rec-indicator.recording {
+        background: rgba(255, 75, 107, 0.25) !important;
+        border: 1px solid rgba(255, 75, 107, 0.5) !important;
+        box-shadow: 0 0 30px rgba(255, 75, 107, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+      }
+
+      /* 🖤 3. Đồng hồ góc phải đối xứng (Top Right) */
+      .fullscreen-mode #liveClock {
+        grid-column: 3;
+        justify-self: end;
+        background: rgba(15, 10, 12, 0.35) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow:
+          0 12px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+      }
+
+      /* 🖤 4. Dải thời gian bám sát cạnh đáy (Bottom Player) */
+      .fullscreen-mode .simple-player-ui {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        bottom: 40px;
+        left: 40px;
+        width: calc(100% - 80px);
+        padding: 20px;
+        background: rgba(15, 10, 12, 0.35) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 16px;
+        z-index: 100;
+        box-shadow:
+          0 15px 40px rgba(0, 0, 0, 0.4),
+          inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+      }
+
+      .fullscreen-mode .player-text-row {
+        color: #ffffff !important;
+      }
+
+      .fullscreen-mode .player-timeline-bg {
+        background: rgba(255, 255, 255, 0.15) !important;
+      }
+
+      /* Thanh công cụ trượt ẩn tinh tế */
+      .fullscreen-mode .toolbar {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translate(-50%, 150%);
+        opacity: 0;
+        z-index: 150;
+        box-shadow: 0 15px 45px rgba(61, 8, 19, 0.08);
+        transition:
+          transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.3s ease;
+      }
+
+      .fullscreen-mode .toolbar.show-toolbar {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+
+      /* 🌟 GÓC NGẮM CAMERA 90 ĐỘ: Giải quyết triệt để lỗi Margin và Texture Overlap */
+      .fullscreen-mode .camera-hud-corners,
+      .fullscreen-mode .camera-hud-corners-bottom {
+        position: absolute;
+        inset: 0; /* HARDEST CORNERS: Không padding, ốp thẳng vào mép màn hình */
+        pointer-events: none;
+        z-index: 10;
+        box-sizing: border-box;
+      }
+
+      /* Thay viền mờ bằng màu đặc (solid) để chúng chèn lấp hoàn hảo nét viền nối bên dưới,
+         chấm dứt hiện tượng layer chồng layer loang lổ (Texture clutter). */
+      .fullscreen-mode .camera-hud-corners::before {
+        top: 0;
+        left: 0;
+        width: 48px;
+        height: 48px;
+        border-top: 3px solid var(--action-lead);
+        border-left: 3px solid var(--action-lead);
+      }
+      .fullscreen-mode .camera-hud-corners::after {
+        top: 0;
+        right: 0;
+        width: 48px;
+        height: 48px;
+        border-top: 3px solid var(--action-lead);
+        border-right: 3px solid var(--action-lead);
+      }
+      .fullscreen-mode .camera-hud-corners-bottom::before {
+        bottom: 0;
+        left: 0;
+        width: 48px;
+        height: 48px;
+        border-bottom: 3px solid var(--action-lead);
+        border-left: 3px solid var(--action-lead);
+      }
+      .fullscreen-mode .camera-hud-corners-bottom::after {
+        bottom: 0;
+        right: 0;
+        width: 48px;
+        height: 48px;
+        border-bottom: 3px solid var(--action-lead);
+        border-right: 3px solid var(--action-lead);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+          animation-delay: -1ms !important;
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          background-attachment: initial !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/fix-webm-duration@1.0.6/fix-webm-duration.js"></script>
   </head>
   <body>
-    <!-- 🌀 Kinetic Typography Background -->
+    <!-- 🌀 Ambient Running Tracks -->
     <div class="ambient-container ambient-left">
       <div class="ambient-track">
-        <span>FILMONG STUDIO FILMONG STUDIO FILMONG STUDIO</span>
+        <span>FILMONG PHOTOBOOTH FILMING LIVE STREAM</span>
       </div>
     </div>
     <div class="ambient-container ambient-right">
       <div class="ambient-track">
-        <span>LIVE MONITOR LIVE MONITOR LIVE MONITOR</span>
+        <span>LIVE STUDIO PHOTOBOOTH CAMERA FEED</span>
       </div>
     </div>
 
-    <!-- ✨ THE PREMIUM BRAND HEADER -->
-    <div class="brand-header">
+    <!-- 🏷️ BRAND HEADER -->
+    <div class="brand-header" id="brandHeader">
       <div class="logo-main">FILMONG</div>
       <div class="logo-sub">
         <div class="brand-live-dot"></div>
-        LIVE MONITOR
+        PHOTOBOOTH
       </div>
     </div>
 
-    <!-- 📊 Performance Monitor -->
+    <!-- 📊 Performance Panel -->
     <div class="perf-monitor hidden" id="perfMonitor">
       <span>RES: <b id="perfRes">0x0</b></span>
       <span>FPS: <b id="perfFps">0</b></span>
       <span>CAM: <b id="perfName">None</b></span>
     </div>
 
-    <!-- 🔑 License Overlay -->
+    <!-- 🔑 License System UI -->
     <div id="licenseOverlay" class="full-overlay">
       <div class="overlay-card">
-        <div class="logo-main" style="font-size: 24px; margin-bottom: 5px">
+        <div
+          class="logo-main"
+          style="font-size: 24px; margin-bottom: 5px; letter-spacing: -1px"
+        >
           FILMONG
         </div>
         <div
           class="logo-sub"
-          style="margin-bottom: 20px; justify-content: center; background: none"
+          style="
+            margin-bottom: 24px;
+            justify-content: center;
+            background: none;
+            border: none;
+          "
         >
           System Activation
         </div>
@@ -859,17 +1099,27 @@
           autocomplete="off"
           spellcheck="false"
         />
-        <button id="activateBtn" onclick="handleActivate()" style="width: 100%">
+        <button
+          id="activateBtn"
+          onclick="handleActivate()"
+          style="
+            width: 100%;
+            background: #ffffff;
+            color: #000000;
+            border-radius: 100px;
+            padding: 14px;
+          "
+        >
           Activate System
         </button>
         <p
           id="licenseError"
           style="
             color: var(--action-lead);
-            font-size: 12px;
-            margin-top: 10px;
+            font-size: 11px;
+            margin-top: 12px;
             min-height: 14px;
-            font-weight: bold;
+            font-weight: 600;
           "
         ></p>
         <small class="trial-hint">🎁 Trial Mode: 10 minutes without key</small>
@@ -877,13 +1127,15 @@
       </div>
     </div>
 
-    <!-- 📸 Main Layout -->
+    <!-- 📸 Main Spatial Studio Viewport -->
     <div class="app-container">
       <div class="preview-wrapper">
-        <!-- Video Container -->
         <div class="video-container-inner">
+          <!-- Static/Dynamic Camera Corner Indicators -->
+          <div class="camera-hud-corners"></div>
+          <div class="camera-hud-corners-bottom"></div>
+
           <div class="cam-ui">
-            <!-- Mặc định khởi chạy ở trạng thái previewing -->
             <div class="rec-indicator previewing" id="recIndicatorUI">
               <div class="rec-dot"></div>
               <span id="recText">LIVE PREVIEW</span>
@@ -892,6 +1144,11 @@
           </div>
 
           <div class="composition-grid" id="gridOverlay">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
             <div></div>
             <div></div>
             <div></div>
@@ -907,7 +1164,7 @@
           ></video>
         </div>
 
-        <!-- ✨ NEW: Simple Player UI -->
+        <!-- Timeline overlay on full screen monitor -->
         <div class="simple-player-ui">
           <div class="player-text-row">
             <span class="player-title">Filmong Live Preview</span>
@@ -920,11 +1177,13 @@
       </div>
     </div>
 
-    <!-- 🛠️ Toolbar -->
+    <!-- 🛠️ CONTROL TOOLBAR -->
     <div class="toolbar" id="toolbar">
+      <button id="btnBrand" class="active" onclick="toggleBranding()">
+        🏷️ Thương Hiệu
+      </button>
       <button id="btnGrid" onclick="toggleGrid()">🔲 Khung Căn Chỉnh</button>
       <button id="btnPerf" onclick="togglePerf()">📊 Thông Số</button>
-      <!-- Mặc định thêm class 'active' để nút lật ngang hiển thị trạng thái đang bật -->
       <button id="btnFlipH" class="active" onclick="toggleFlipH()">
         ↔️ Ngang
       </button>
@@ -935,34 +1194,92 @@
         onchange="switchCamera()"
       ></select>
 
-      <!-- Nút Ghi Hình Mới -->
       <button id="btnRecord" onclick="toggleRecording()">🔴 Ghi Hình</button>
 
-      <!-- 🔄 Nguồn -->
       <button onclick="changeSource()">🔄 Nguồn</button>
       <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
 
-    <!-- 🔑 Source Selector -->
+    <!-- 🔌 Camera Selector Modal -->
     <div id="sourceSelector" class="full-overlay hidden">
       <div class="overlay-card">
         <div
           class="logo-sub"
-          style="margin-bottom: 20px; justify-content: center; background: none"
+          style="
+            margin-bottom: 24px;
+            justify-content: center;
+            background: none;
+            border: none;
+            font-size: 13px;
+          "
         >
           Choose Source
         </div>
-        <div style="display: flex; flex-direction: column; gap: 10px">
+        <div class="source-btn-container">
           <button onclick="startCamera()">📷 Camera (Capture Card)</button>
           <button onclick="startScreen()">🖥️ Share Screen</button>
         </div>
       </div>
     </div>
 
-    <!-- Toast Notification Container -->
+    <!-- Interactive alert container -->
     <div id="toastNotification" class="toast-notification"></div>
 
     <script>
+      /* =======================================================
+            NEW SPECIFICATION: BRANDING TOGGLE STATE MANAGEMENT
+            ======================================================= */
+      function toggleBranding() {
+        const isFullscreen = !!document.fullscreenElement;
+
+        // Hiding/showing brand just applies when in full screen mode
+        if (!isFullscreen) return;
+
+        let showBrand =
+          localStorage.getItem("show_brand_photobooth") !== "false";
+        showBrand = !showBrand;
+        localStorage.setItem(
+          "show_brand_photobooth",
+          showBrand ? "true" : "false",
+        );
+
+        updateBrandingVisibility();
+      }
+
+      function updateBrandingVisibility() {
+        const brandHeader = document.getElementById("brandHeader");
+        const btnBrand = document.getElementById("btnBrand");
+        const isFullscreen = !!document.fullscreenElement;
+        const showBrandStored =
+          localStorage.getItem("show_brand_photobooth") !== "false";
+
+        if (!isFullscreen) {
+          // When not in full screen, branding should always display
+          brandHeader.classList.remove("hidden-brand");
+          btnBrand.classList.add("active");
+          btnBrand.style.opacity = "0.4";
+          btnBrand.style.cursor = "not-allowed";
+          btnBrand.title = "Luôn hiển thị ở chế độ cửa sổ";
+        } else {
+          // Reactivate button inside fullscreen
+          btnBrand.style.opacity = "1";
+          btnBrand.style.cursor = "pointer";
+          btnBrand.title = "Ẩn/Hiện thương hiệu";
+
+          if (showBrandStored) {
+            brandHeader.classList.remove("hidden-brand");
+            btnBrand.classList.add("active");
+          } else {
+            brandHeader.classList.add("hidden-brand");
+            btnBrand.classList.remove("active");
+          }
+        }
+      }
+
+      function initBrandingState() {
+        updateBrandingVisibility();
+      }
+
       /* =======================================================
             1. UI FEATURES LOGIC
             ======================================================= */
@@ -1017,12 +1334,10 @@
       let recordedChunks = [];
       let isRecording = false;
 
-      // Biến phục vụ Timer & Giới hạn 30 giây
       let recordStartTime = 0;
       let recordTimerInterval = null;
-      let recordLimitTimeout = null; // Quản lý thời gian tự động dừng
+      let recordLimitTimeout = null;
 
-      // Hàm format giây sang MM:SS hoặc HH:MM:SS
       function formatTime(totalSeconds) {
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60)
@@ -1035,7 +1350,6 @@
         return `${m}:${s}`;
       }
 
-      // Hàm hiển thị thông báo thân thiện tự động ẩn sau 3 giây
       function showNotification(message) {
         const toast = document.getElementById("toastNotification");
         toast.innerHTML = `<span>🎥</span> <span>${message}</span>`;
@@ -1064,7 +1378,6 @@
       function startRecording() {
         recordedChunks = [];
         try {
-          // 1. ƯU TIÊN MP4 (Khắc phục lỗi WebM trên Windows)
           let selectedMimeType = "";
           const types = [
             "video/mp4;codecs=h264,aac",
@@ -1101,7 +1414,6 @@
             const ext = selectedMimeType.includes("mp4") ? "mp4" : "webm";
             const durationMs = Date.now() - recordStartTime;
 
-            // Hàm xử lý Download
             const triggerDownload = (finalBlob) => {
               const url = URL.createObjectURL(finalBlob);
               const a = document.createElement("a");
@@ -1117,7 +1429,6 @@
               }, 100);
             };
 
-            // Chạy fix-webm-duration CHỈ KHI định dạng thực sự là WebM
             if (ext === "webm" && typeof ysFixWebmDuration !== "undefined") {
               ysFixWebmDuration(rawBlob, durationMs, function (fixedBlob) {
                 triggerDownload(fixedBlob);
@@ -1130,12 +1441,10 @@
           mediaRecorder.start();
           isRecording = true;
 
-          // Chuyển đổi class của Container sang chế độ RECORDING
           const recUI = document.getElementById("recIndicatorUI");
           recUI.classList.remove("previewing");
           recUI.classList.add("recording");
 
-          // Bộ đếm giờ (Timer)
           recordStartTime = Date.now();
           document.getElementById("recText").textContent = "REC • 00:00";
 
@@ -1147,7 +1456,6 @@
               `REC • ${formatTime(elapsedSec)}`;
           }, 1000);
 
-          // TỰ ĐỘNG DỪNG GHI VÀO MỐC 30 GIÂY
           recordLimitTimeout = setTimeout(() => {
             if (isRecording) {
               stopRecording();
@@ -1157,7 +1465,6 @@
             }
           }, 30000);
 
-          // Đổi UI Nút
           const btnRecord = document.getElementById("btnRecord");
           btnRecord.innerHTML = "⏹ Dừng Ghi";
           btnRecord.classList.add("btn-recording-active");
@@ -1167,7 +1474,6 @@
       }
 
       function stopRecording() {
-        // Hủy bộ đếm thời gian giới hạn 30 giây nếu người dùng nhấn dừng thủ công
         if (recordLimitTimeout) {
           clearTimeout(recordLimitTimeout);
           recordLimitTimeout = null;
@@ -1178,12 +1484,10 @@
         }
         isRecording = false;
 
-        // Trả lại class Container về chế độ PREVIEWING thông thường
         const recUI = document.getElementById("recIndicatorUI");
         recUI.classList.remove("recording");
         recUI.classList.add("previewing");
 
-        // Reset UI Timer
         clearInterval(recordTimerInterval);
         document.getElementById("recText").textContent = "LIVE PREVIEW";
 
@@ -1201,7 +1505,7 @@
       const cameraSelect = document.getElementById("cameraSelect");
 
       let currentStream = null;
-      let isFlippedH = true; // Đặt mặc định trạng thái ban đầu là bật (true)
+      let isFlippedH = true;
       let isFlippedV = false;
 
       function toggleFlipH() {
@@ -1221,7 +1525,6 @@
       }
 
       function stopStream() {
-        // Tự động dừng quay và lưu video nếu tắt nguồn camera đột ngột
         if (isRecording) {
           stopRecording();
         }
@@ -1330,13 +1633,15 @@
       }
 
       document.addEventListener("fullscreenchange", () => {
-        if (document.fullscreenElement)
+        if (document.fullscreenElement) {
           document.body.classList.add("fullscreen-mode");
-        else {
+        } else {
           document.body.classList.remove("fullscreen-mode");
           toolbar.classList.remove("show-toolbar");
         }
+        updateBrandingVisibility();
       });
+
       document.addEventListener("mousemove", (e) => {
         if (!document.fullscreenElement) return;
         if (window.innerHeight - e.clientY < 100)
@@ -1528,9 +1833,17 @@
           }
         }
       }
-      if (document.readyState === "loading")
-        document.addEventListener("DOMContentLoaded", initLicenseFlow);
-      else initLicenseFlow();
+
+      function initApp() {
+        initBrandingState();
+        initLicenseFlow();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initApp);
+      } else {
+        initApp();
+      }
     </script>
   </body>
 </html>
