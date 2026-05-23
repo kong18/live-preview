@@ -15,6 +15,13 @@
         --action-glow: rgba(138, 10, 10, 0.4);
         --surface-white: #ffffff;
         --text-neutral: #1a1a1a;
+
+        /* New Retro Theme Colors */
+        --retro-cyan: #4dd0d0;
+        --retro-hotpink: #ff6eb4;
+        --retro-lightpink: #ffc2df;
+        --retro-dark: #1d1b26;
+        --retro-bg: #ff85c6;
       }
 
       * {
@@ -38,6 +45,15 @@
         display: flex;
         flex-direction: column;
         position: relative;
+        transition: background-color 0.5s ease;
+      }
+
+      /* --- FULLSCREEN RETRO THEME OVERRIDES --- */
+      body.fullscreen-mode {
+        background-color: var(
+          --retro-cyan
+        ); /* Matches the edge-to-edge frame */
+        background-image: none;
       }
 
       /* --- 🌀 KINETIC TYPOGRAPHY --- */
@@ -210,6 +226,12 @@
         padding: 80px 40px 100px 40px;
         width: 100%;
         z-index: 10;
+        transition: padding 0.5s ease;
+      }
+
+      /* Edge-to-edge removal of outer pink padding */
+      .fullscreen-mode .app-container {
+        padding: 0;
       }
 
       .preview-wrapper {
@@ -221,21 +243,36 @@
         border-radius: 24px;
         border: 8px solid var(--surface-white);
         background: #000;
-        overflow: hidden;
         animation: studioBreathing 4s ease-in-out infinite;
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
+      .video-container-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        overflow: hidden;
+        transition: all 0.5s ease;
+      }
+
+      /* OVERRIDE FOR FULLSCREEN MODE -> Edge-to-edge RETRO PLAYER FRAME */
       .fullscreen-mode .preview-wrapper {
         border: none;
         border-radius: 0;
         max-width: 100%;
-        height: 100%;
-        animation: none;
+        max-height: 100vh;
+        height: 100vh;
+        background: var(--retro-cyan);
         box-shadow: none;
+        padding: 55px 130px 85px 35px; /* Inner space optimized for max screen real estate */
+        animation: none;
       }
 
-      .fullscreen-mode .app-container {
-        padding: 0;
+      .fullscreen-mode .video-container-inner {
+        border: 6px solid var(--retro-dark);
+        border-radius: 16px;
+        background: var(--retro-dark);
       }
 
       @keyframes studioBreathing {
@@ -270,6 +307,168 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
+      /* --- 📼 RETRO UI ELEMENTS --- */
+      .retro-ui {
+        display: none;
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      .fullscreen-mode .retro-ui {
+        display: block;
+      }
+
+      /* Top Dots */
+      .retro-top {
+        position: absolute;
+        top: 20px;
+        left: 35px;
+        display: flex;
+        gap: 12px;
+      }
+      .retro-dot-ui {
+        width: 16px;
+        height: 16px;
+        background: var(--retro-hotpink);
+        border: 3px solid var(--retro-dark);
+        border-radius: 50%;
+      }
+
+      /* Right Side Controls Panel */
+      .retro-right {
+        position: absolute;
+        top: 55px;
+        right: 30px;
+        bottom: 85px;
+        width: 80px;
+        background: var(--retro-lightpink);
+        border: 5px solid var(--retro-dark);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 25px 0;
+        gap: 20px;
+      }
+      .retro-circle-ui {
+        width: 50px;
+        height: 50px;
+        background: var(--retro-hotpink);
+        border: 5px solid var(--retro-dark);
+        border-radius: 50%;
+      }
+      .retro-pill-ui {
+        width: 45px;
+        height: 18px;
+        background: var(--retro-hotpink);
+        border: 4px solid var(--retro-dark);
+        border-radius: 10px;
+        margin-top: auto;
+      }
+
+      /* Bottom Media Progress Panel */
+      .retro-bottom {
+        position: absolute;
+        bottom: 25px;
+        left: 35px;
+        right: 130px;
+        height: 45px;
+        background: var(--retro-lightpink);
+        border: 5px solid var(--retro-dark);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        gap: 15px;
+      }
+
+      /* THE COUNTDOWN LINE FOR RECORDING */
+      .retro-progress-track {
+        flex: 1;
+        height: 16px;
+        background: #ffffff;
+        border: 4px solid var(--retro-dark);
+        border-radius: 12px;
+        position: relative;
+      }
+      .retro-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--retro-hotpink);
+        border-radius: 8px;
+      }
+      .retro-progress-thumb {
+        position: absolute;
+        top: 50%;
+        left: 0%;
+        transform: translate(-50%, -50%);
+        width: 22px;
+        height: 22px;
+        background: #ffffff;
+        border: 4px solid var(--retro-dark);
+        border-radius: 50%;
+      }
+
+      .preview-wrapper:has(#recIndicatorUI.recording) .retro-progress-fill {
+        animation: retroTimerFill 30s linear forwards;
+      }
+      .preview-wrapper:has(#recIndicatorUI.recording) .retro-progress-thumb {
+        animation: retroTimerThumb 30s linear forwards;
+      }
+
+      @keyframes retroTimerFill {
+        from {
+          width: 0%;
+        }
+        to {
+          width: 100%;
+        }
+      }
+      @keyframes retroTimerThumb {
+        from {
+          left: 0%;
+        }
+        to {
+          left: 100%;
+        }
+      }
+
+      /* Bottom Tiny Buttons */
+      .retro-bottom-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .retro-play-btn {
+        width: 24px;
+        height: 24px;
+        background: var(--retro-hotpink);
+        border: 4px solid var(--retro-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .retro-play-btn::after {
+        content: "";
+        display: block;
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 7px solid var(--retro-dark);
+        margin-left: 3px;
+      }
+      .retro-small-dot {
+        width: 14px;
+        height: 14px;
+        background: var(--retro-hotpink);
+        border: 4px solid var(--retro-dark);
+        border-radius: 50%;
+      }
+
       /* --- 🎛️ In-Screen Overlays (FANTASTICAL HUD DESIGN) --- */
       .cam-ui {
         position: absolute;
@@ -284,7 +483,6 @@
         z-index: 10;
       }
 
-      /* --- 💫 KHUNG CHỨA TIMER VỚI VIỀN LED CHẠY ĐỘNG --- */
       .rec-indicator {
         position: relative;
         display: flex;
@@ -299,13 +497,12 @@
         overflow: hidden;
       }
 
-      /* Kỹ thuật Mask lót viền phát sáng chạy vòng quanh */
       .rec-indicator::after {
         content: "";
         position: absolute;
         inset: 0;
         border-radius: inherit;
-        padding: 2px; /* Độ dày của viền sáng */
+        padding: 2px;
         -webkit-mask:
           linear-gradient(#fff 0 0) content-box,
           linear-gradient(#fff 0 0);
@@ -316,7 +513,6 @@
         transition: all 0.5s ease;
       }
 
-      /* 1. Trạng thái LIVE PREVIEW (Sẵn sàng) */
       .rec-indicator.previewing {
         color: #ffffff;
         box-shadow:
@@ -337,7 +533,6 @@
         animation: borderSweep 3.5s linear infinite;
       }
 
-      /* 2. Trạng thái RECORDING (Cực kỳ nổi bật & Fantastical) */
       .rec-indicator.recording {
         color: #ff3b30;
         background: rgba(15, 0, 0, 0.9);
@@ -346,7 +541,6 @@
           0 0 25px rgba(255, 45, 85, 0.5);
         animation: breathingRedPanel 2s ease-in-out infinite;
       }
-      /* Vòng chạy laser tốc độ cao đa sắc đỏ-cam rực rỡ */
       .rec-indicator.recording::after {
         background: linear-gradient(
           90deg,
@@ -360,7 +554,6 @@
         animation: borderSweep 1.8s linear infinite;
       }
 
-      /* Keyframes chạy dải sáng vòng quanh viền */
       @keyframes borderSweep {
         0% {
           background-position: 200% 0;
@@ -370,7 +563,6 @@
         }
       }
 
-      /* Hơi thở hào quang xanh cho Standby */
       @keyframes breathingGreenPanel {
         0%,
         100% {
@@ -385,7 +577,6 @@
         }
       }
 
-      /* Hơi thở hào quang đỏ neon cho Recording */
       @keyframes breathingRedPanel {
         0%,
         100% {
@@ -402,7 +593,6 @@
         }
       }
 
-      /* --- 💡 ĐÈN TÍN HIỆU NHỊP TIM (HEARTBEAT GLOW) --- */
       .rec-dot {
         width: 11px;
         height: 11px;
@@ -410,14 +600,12 @@
         transition: all 0.5s ease;
       }
 
-      /* Đèn xanh tĩnh */
       .rec-indicator.previewing .rec-dot {
         background: #34c759;
         box-shadow: 0 0 12px #34c759;
         animation: none;
       }
 
-      /* Đèn nháy đỏ theo nhịp thở dãn nở */
       .rec-indicator.recording .rec-dot {
         background: #ff3b30;
         animation: heartbeatGlow 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
@@ -443,7 +631,6 @@
         }
       }
 
-      /* --- ⏱️ ĐỒNG HỒ ĐỒNG BỘ HIỆU ỨNG (SILVER SHIMMER) --- */
       #liveClock {
         position: relative;
         background: rgba(10, 10, 10, 0.85);
@@ -583,7 +770,6 @@
         box-shadow: 0 0 0 2px var(--action-lead) inset;
       }
 
-      /* 🎥 CSS cho chức năng Ghi Hình */
       @keyframes recordingPulse {
         0% {
           box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
@@ -788,24 +974,59 @@
     <!-- 📸 Main Layout -->
     <div class="app-container">
       <div class="preview-wrapper">
-        <div class="cam-ui">
-          <!-- Mặc định khởi chạy ở trạng thái previewing -->
-          <div class="rec-indicator previewing" id="recIndicatorUI">
-            <div class="rec-dot"></div>
-            <span id="recText">LIVE PREVIEW</span>
+        <!-- ✨ NEW: Retro Frame UI Elements (Only visible in fullscreen) -->
+        <div class="retro-ui">
+          <div class="retro-top">
+            <div class="retro-dot-ui"></div>
+            <div class="retro-dot-ui"></div>
+            <div class="retro-dot-ui"></div>
           </div>
-          <div id="liveClock">12:00 AM</div>
+          <div class="retro-right">
+            <div class="retro-circle-ui"></div>
+            <div class="retro-circle-ui"></div>
+            <div class="retro-pill-ui"></div>
+          </div>
+          <div class="retro-bottom">
+            <div class="retro-progress-track">
+              <div class="retro-progress-fill"></div>
+              <div class="retro-progress-thumb"></div>
+            </div>
+            <div class="retro-bottom-controls">
+              <div class="retro-play-btn"></div>
+              <div class="retro-small-dot"></div>
+              <div class="retro-small-dot"></div>
+              <div class="retro-small-dot"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="composition-grid" id="gridOverlay">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
+        <!-- NEW: Inner wrapper to keep the video content isolated beautifully within the Retro Border -->
+        <div class="video-container-inner">
+          <div class="cam-ui">
+            <!-- Mặc định khởi chạy ở trạng thái previewing -->
+            <div class="rec-indicator previewing" id="recIndicatorUI">
+              <div class="rec-dot"></div>
+              <span id="recText">LIVE PREVIEW</span>
+            </div>
+            <div id="liveClock">12:00 AM</div>
+          </div>
 
-        <!-- Mặc định thêm class 'flipped' để lật ngang ngay từ đầu -->
-        <video id="preview" class="flipped" autoplay playsinline muted></video>
+          <div class="composition-grid" id="gridOverlay">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+
+          <!-- Mặc định thêm class 'flipped' để lật ngang ngay từ đầu -->
+          <video
+            id="preview"
+            class="flipped"
+            autoplay
+            playsinline
+            muted
+          ></video>
+        </div>
       </div>
     </div>
 
