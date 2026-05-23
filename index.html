@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Filmong Live Preview Pro</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=VT323&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -15,13 +15,6 @@
         --action-glow: rgba(138, 10, 10, 0.4);
         --surface-white: #ffffff;
         --text-neutral: #1a1a1a;
-
-        /* New Retro Theme Colors */
-        --retro-cyan: #4dd0d0;
-        --retro-hotpink: #ff6eb4;
-        --retro-lightpink: #ffc2df;
-        --retro-dark: #1d1b26;
-        --retro-bg: #ff85c6;
       }
 
       * {
@@ -48,11 +41,9 @@
         transition: background-color 0.5s ease;
       }
 
-      /* --- FULLSCREEN RETRO THEME OVERRIDES --- */
+      /* --- FULLSCREEN THEME OVERRIDES --- */
       body.fullscreen-mode {
-        background-color: var(
-          --retro-cyan
-        ); /* Matches the edge-to-edge frame */
+        background-color: #000000;
         background-image: none;
       }
 
@@ -229,7 +220,6 @@
         transition: padding 0.5s ease;
       }
 
-      /* Edge-to-edge removal of outer pink padding */
       .fullscreen-mode .app-container {
         padding: 0;
       }
@@ -256,23 +246,22 @@
         transition: all 0.5s ease;
       }
 
-      /* OVERRIDE FOR FULLSCREEN MODE -> Edge-to-edge RETRO PLAYER FRAME */
+      /* FULLSCREEN LAYOUT OVERRIDES */
       .fullscreen-mode .preview-wrapper {
         border: none;
         border-radius: 0;
         max-width: 100%;
-        max-height: 100vh;
         height: 100vh;
-        background: var(--retro-cyan);
+        background: #000000;
         box-shadow: none;
-        padding: 55px 130px 85px 35px; /* Inner space optimized for max screen real estate */
+        padding: 0;
         animation: none;
       }
 
       .fullscreen-mode .video-container-inner {
-        border: 6px solid var(--retro-dark);
-        border-radius: 16px;
-        background: var(--retro-dark);
+        border: none;
+        border-radius: 0;
+        background: transparent;
       }
 
       @keyframes studioBreathing {
@@ -307,118 +296,95 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
-      /* --- 📼 RETRO UI ELEMENTS --- */
-      .retro-ui {
+      /* --- 🎛️ SIMPLE PLAYER UI --- */
+      .simple-player-ui {
         display: none;
         position: absolute;
-        inset: 0;
-        pointer-events: none;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 60px 2.5% 25px 2.5%; /* Creates the 95% width feel with cinematic dark gradient */
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.85) 0%,
+          rgba(0, 0, 0, 0) 100%
+        );
         z-index: 20;
+        font-family: "Montserrat", sans-serif;
       }
 
-      .fullscreen-mode .retro-ui {
-        display: block;
-      }
-
-      /* Top Dots */
-      .retro-top {
-        position: absolute;
-        top: 20px;
-        left: 35px;
-        display: flex;
-        gap: 12px;
-      }
-      .retro-dot-ui {
-        width: 16px;
-        height: 16px;
-        background: var(--retro-hotpink);
-        border: 3px solid var(--retro-dark);
-        border-radius: 50%;
-      }
-
-      /* Right Side Controls Panel */
-      .retro-right {
-        position: absolute;
-        top: 55px;
-        right: 30px;
-        bottom: 85px;
-        width: 80px;
-        background: var(--retro-lightpink);
-        border: 5px solid var(--retro-dark);
-        border-radius: 14px;
+      .fullscreen-mode .simple-player-ui {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        padding: 25px 0;
-        gap: 20px;
-      }
-      .retro-circle-ui {
-        width: 50px;
-        height: 50px;
-        background: var(--retro-hotpink);
-        border: 5px solid var(--retro-dark);
-        border-radius: 50%;
-      }
-      .retro-pill-ui {
-        width: 45px;
-        height: 18px;
-        background: var(--retro-hotpink);
-        border: 4px solid var(--retro-dark);
-        border-radius: 10px;
-        margin-top: auto;
+        gap: 12px;
       }
 
-      /* Bottom Media Progress Panel */
-      .retro-bottom {
-        position: absolute;
-        bottom: 25px;
-        left: 35px;
-        right: 130px;
-        height: 45px;
-        background: var(--retro-lightpink);
-        border: 5px solid var(--retro-dark);
-        border-radius: 14px;
+      .player-text-row {
         display: flex;
-        align-items: center;
-        padding: 0 15px;
-        gap: 15px;
+        justify-content: space-between;
+        color: #ffffff;
+        font-family: "VT323", monospace;
+        font-size: 1.625rem;
+        font-weight: 500;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        padding: 0 2px;
       }
 
-      /* THE COUNTDOWN LINE FOR RECORDING */
-      .retro-progress-track {
-        flex: 1;
-        height: 16px;
-        background: #ffffff;
-        border: 4px solid var(--retro-dark);
-        border-radius: 12px;
-        position: relative;
+      .player-title {
+        opacity: 0.95;
       }
-      .retro-progress-fill {
+
+      .player-time {
+        opacity: 0.95;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* CSS Animated Time */
+      @property --sec {
+        syntax: "<integer>";
+        initial-value: 0;
+        inherits: false;
+      }
+      .player-time::before {
+        content: "00:00 / 00:30";
+      }
+      .preview-wrapper:has(#recIndicatorUI.recording) .player-time::before {
+        content: "00:" counter(sec, decimal-leading-zero) " / 00:30";
+        animation: countUp 30s linear forwards;
+        counter-reset: sec var(--sec);
+      }
+      @keyframes countUp {
+        from {
+          --sec: 0;
+        }
+        to {
+          --sec: 30;
+        }
+      }
+
+      .player-timeline-bg {
+        width: 100%;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .player-timeline-fill {
         height: 100%;
         width: 0%;
-        background: var(--retro-hotpink);
-        border-radius: 8px;
-      }
-      .retro-progress-thumb {
-        position: absolute;
-        top: 50%;
-        left: 0%;
-        transform: translate(-50%, -50%);
-        width: 22px;
-        height: 22px;
         background: #ffffff;
-        border: 4px solid var(--retro-dark);
-        border-radius: 50%;
+        border-radius: 4px;
+        transition: background 0.3s ease;
       }
 
-      .preview-wrapper:has(#recIndicatorUI.recording) .retro-progress-fill {
-        animation: retroTimerFill 30s linear forwards;
-      }
-      .preview-wrapper:has(#recIndicatorUI.recording) .retro-progress-thumb {
-        animation: retroTimerThumb 30s linear forwards;
+      /* Highlight the track with recording red when active */
+      .preview-wrapper:has(#recIndicatorUI.recording) .player-timeline-fill {
+        background: #ff3b30;
+        animation: simpleTimerFill 30s linear forwards;
       }
 
-      @keyframes retroTimerFill {
+      @keyframes simpleTimerFill {
         from {
           width: 0%;
         }
@@ -426,50 +392,8 @@
           width: 100%;
         }
       }
-      @keyframes retroTimerThumb {
-        from {
-          left: 0%;
-        }
-        to {
-          left: 100%;
-        }
-      }
 
-      /* Bottom Tiny Buttons */
-      .retro-bottom-controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .retro-play-btn {
-        width: 24px;
-        height: 24px;
-        background: var(--retro-hotpink);
-        border: 4px solid var(--retro-dark);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .retro-play-btn::after {
-        content: "";
-        display: block;
-        width: 0;
-        height: 0;
-        border-top: 5px solid transparent;
-        border-bottom: 5px solid transparent;
-        border-left: 7px solid var(--retro-dark);
-        margin-left: 3px;
-      }
-      .retro-small-dot {
-        width: 14px;
-        height: 14px;
-        background: var(--retro-hotpink);
-        border: 4px solid var(--retro-dark);
-        border-radius: 50%;
-      }
-
-      /* --- 🎛️ In-Screen Overlays (FANTASTICAL HUD DESIGN) --- */
+      /* --- 🎛️ In-Screen Overlays --- */
       .cam-ui {
         position: absolute;
         top: 24px;
@@ -686,7 +610,7 @@
       /* --- 🛠️ Toolbar --- */
       .toolbar {
         position: fixed;
-        bottom: 30px;
+        bottom: 30px; /* Essential to stay inside the 100px JS mousemove trigger zone */
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -697,13 +621,14 @@
         border-radius: 100px;
         border: 1px solid rgba(138, 10, 10, 0.1);
         box-shadow: 0 15px 35px rgba(138, 10, 10, 0.15);
-        z-index: 200;
+        z-index: 100;
         transition:
           transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
           opacity 0.4s ease;
         flex-wrap: nowrap;
         white-space: nowrap;
       }
+
       .fullscreen-mode .toolbar {
         transform: translate(-50%, 150%);
         opacity: 0;
@@ -791,7 +716,7 @@
       .toast-notification {
         position: fixed;
         top: 25px;
-        right: 25px;
+        right: 0px;
         background: rgba(255, 255, 255, 0.95);
         color: var(--text-neutral);
         border-left: 5px solid var(--action-lead);
@@ -868,25 +793,6 @@
         border-color: var(--action-lead);
       }
 
-      .floating-heart {
-        position: fixed;
-        bottom: 20px;
-        right: 30px;
-        font-size: 50px;
-        animation: float 4s ease-in-out infinite;
-        opacity: 0.6;
-        z-index: 10;
-        pointer-events: none;
-      }
-      @keyframes float {
-        0%,
-        100% {
-          transform: translateY(0) rotate(0deg);
-        }
-        50% {
-          transform: translateY(-20px) rotate(10deg);
-        }
-      }
       .license-status {
         font-weight: 700;
         font-size: 12px;
@@ -974,33 +880,7 @@
     <!-- 📸 Main Layout -->
     <div class="app-container">
       <div class="preview-wrapper">
-        <!-- ✨ NEW: Retro Frame UI Elements (Only visible in fullscreen) -->
-        <div class="retro-ui">
-          <div class="retro-top">
-            <div class="retro-dot-ui"></div>
-            <div class="retro-dot-ui"></div>
-            <div class="retro-dot-ui"></div>
-          </div>
-          <div class="retro-right">
-            <div class="retro-circle-ui"></div>
-            <div class="retro-circle-ui"></div>
-            <div class="retro-pill-ui"></div>
-          </div>
-          <div class="retro-bottom">
-            <div class="retro-progress-track">
-              <div class="retro-progress-fill"></div>
-              <div class="retro-progress-thumb"></div>
-            </div>
-            <div class="retro-bottom-controls">
-              <div class="retro-play-btn"></div>
-              <div class="retro-small-dot"></div>
-              <div class="retro-small-dot"></div>
-              <div class="retro-small-dot"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- NEW: Inner wrapper to keep the video content isolated beautifully within the Retro Border -->
+        <!-- Video Container -->
         <div class="video-container-inner">
           <div class="cam-ui">
             <!-- Mặc định khởi chạy ở trạng thái previewing -->
@@ -1018,7 +898,6 @@
             <div></div>
           </div>
 
-          <!-- Mặc định thêm class 'flipped' để lật ngang ngay từ đầu -->
           <video
             id="preview"
             class="flipped"
@@ -1027,10 +906,19 @@
             muted
           ></video>
         </div>
+
+        <!-- ✨ NEW: Simple Player UI -->
+        <div class="simple-player-ui">
+          <div class="player-text-row">
+            <span class="player-title">Filmong Live Preview</span>
+            <span class="player-time"></span>
+          </div>
+          <div class="player-timeline-bg">
+            <div class="player-timeline-fill"></div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="floating-heart">💖</div>
 
     <!-- 🛠️ Toolbar -->
     <div class="toolbar" id="toolbar">
