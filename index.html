@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Filmong Live Preview Pro</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&family=VT323&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -38,6 +38,13 @@
         display: flex;
         flex-direction: column;
         position: relative;
+        transition: background-color 0.5s ease;
+      }
+
+      /* --- FULLSCREEN THEME OVERRIDES --- */
+      body.fullscreen-mode {
+        background-color: #000000;
+        background-image: none;
       }
 
       /* --- 🌀 KINETIC TYPOGRAPHY --- */
@@ -210,6 +217,11 @@
         padding: 80px 40px 100px 40px;
         width: 100%;
         z-index: 10;
+        transition: padding 0.5s ease;
+      }
+
+      .fullscreen-mode .app-container {
+        padding: 0;
       }
 
       .preview-wrapper {
@@ -221,21 +233,35 @@
         border-radius: 24px;
         border: 8px solid var(--surface-white);
         background: #000;
-        overflow: hidden;
         animation: studioBreathing 4s ease-in-out infinite;
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
+      .video-container-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        overflow: hidden;
+        transition: all 0.5s ease;
+      }
+
+      /* FULLSCREEN LAYOUT OVERRIDES */
       .fullscreen-mode .preview-wrapper {
         border: none;
         border-radius: 0;
         max-width: 100%;
-        height: 100%;
-        animation: none;
+        height: 100vh;
+        background: #000000;
         box-shadow: none;
+        padding: 0;
+        animation: none;
       }
 
-      .fullscreen-mode .app-container {
-        padding: 0;
+      .fullscreen-mode .video-container-inner {
+        border: none;
+        border-radius: 0;
+        background: transparent;
       }
 
       @keyframes studioBreathing {
@@ -270,7 +296,104 @@
         transform: scaleX(-1) scaleY(-1);
       }
 
-      /* --- 🎛️ In-Screen Overlays (FANTASTICAL HUD DESIGN) --- */
+      /* --- 🎛️ SIMPLE PLAYER UI --- */
+      .simple-player-ui {
+        display: none;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 60px 2.5% 25px 2.5%; /* Creates the 95% width feel with cinematic dark gradient */
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.85) 0%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        z-index: 20;
+        font-family: "Montserrat", sans-serif;
+      }
+
+      .fullscreen-mode .simple-player-ui {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .player-text-row {
+        display: flex;
+        justify-content: space-between;
+        color: #ffffff;
+        font-family: "VT323", monospace;
+        font-size: 1.625rem;
+        font-weight: 500;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        padding: 0 2px;
+      }
+
+      .player-title {
+        opacity: 0.95;
+      }
+
+      .player-time {
+        opacity: 0.95;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* CSS Animated Time */
+      @property --sec {
+        syntax: "<integer>";
+        initial-value: 0;
+        inherits: false;
+      }
+      .player-time::before {
+        content: "00:00 / 00:30";
+      }
+      .preview-wrapper:has(#recIndicatorUI.recording) .player-time::before {
+        content: "00:" counter(sec, decimal-leading-zero) " / 00:30";
+        animation: countUp 30s linear forwards;
+        counter-reset: sec var(--sec);
+      }
+      @keyframes countUp {
+        from {
+          --sec: 0;
+        }
+        to {
+          --sec: 30;
+        }
+      }
+
+      .player-timeline-bg {
+        width: 100%;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .player-timeline-fill {
+        height: 100%;
+        width: 0%;
+        background: #ffffff;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      /* Highlight the track with recording red when active */
+      .preview-wrapper:has(#recIndicatorUI.recording) .player-timeline-fill {
+        background: #ff3b30;
+        animation: simpleTimerFill 30s linear forwards;
+      }
+
+      @keyframes simpleTimerFill {
+        from {
+          width: 0%;
+        }
+        to {
+          width: 100%;
+        }
+      }
+
+      /* --- 🎛️ In-Screen Overlays --- */
       .cam-ui {
         position: absolute;
         top: 24px;
@@ -284,7 +407,6 @@
         z-index: 10;
       }
 
-      /* --- 💫 KHUNG CHỨA TIMER VỚI VIỀN LED CHẠY ĐỘNG --- */
       .rec-indicator {
         position: relative;
         display: flex;
@@ -299,13 +421,12 @@
         overflow: hidden;
       }
 
-      /* Kỹ thuật Mask lót viền phát sáng chạy vòng quanh */
       .rec-indicator::after {
         content: "";
         position: absolute;
         inset: 0;
         border-radius: inherit;
-        padding: 2px; /* Độ dày của viền sáng */
+        padding: 2px;
         -webkit-mask:
           linear-gradient(#fff 0 0) content-box,
           linear-gradient(#fff 0 0);
@@ -316,7 +437,6 @@
         transition: all 0.5s ease;
       }
 
-      /* 1. Trạng thái LIVE PREVIEW (Sẵn sàng) */
       .rec-indicator.previewing {
         color: #ffffff;
         box-shadow:
@@ -337,7 +457,6 @@
         animation: borderSweep 3.5s linear infinite;
       }
 
-      /* 2. Trạng thái RECORDING (Cực kỳ nổi bật & Fantastical) */
       .rec-indicator.recording {
         color: #ff3b30;
         background: rgba(15, 0, 0, 0.9);
@@ -346,7 +465,6 @@
           0 0 25px rgba(255, 45, 85, 0.5);
         animation: breathingRedPanel 2s ease-in-out infinite;
       }
-      /* Vòng chạy laser tốc độ cao đa sắc đỏ-cam rực rỡ */
       .rec-indicator.recording::after {
         background: linear-gradient(
           90deg,
@@ -360,7 +478,6 @@
         animation: borderSweep 1.8s linear infinite;
       }
 
-      /* Keyframes chạy dải sáng vòng quanh viền */
       @keyframes borderSweep {
         0% {
           background-position: 200% 0;
@@ -370,7 +487,6 @@
         }
       }
 
-      /* Hơi thở hào quang xanh cho Standby */
       @keyframes breathingGreenPanel {
         0%,
         100% {
@@ -385,7 +501,6 @@
         }
       }
 
-      /* Hơi thở hào quang đỏ neon cho Recording */
       @keyframes breathingRedPanel {
         0%,
         100% {
@@ -402,7 +517,6 @@
         }
       }
 
-      /* --- 💡 ĐÈN TÍN HIỆU NHỊP TIM (HEARTBEAT GLOW) --- */
       .rec-dot {
         width: 11px;
         height: 11px;
@@ -410,14 +524,12 @@
         transition: all 0.5s ease;
       }
 
-      /* Đèn xanh tĩnh */
       .rec-indicator.previewing .rec-dot {
         background: #34c759;
         box-shadow: 0 0 12px #34c759;
         animation: none;
       }
 
-      /* Đèn nháy đỏ theo nhịp thở dãn nở */
       .rec-indicator.recording .rec-dot {
         background: #ff3b30;
         animation: heartbeatGlow 1.2s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
@@ -443,7 +555,6 @@
         }
       }
 
-      /* --- ⏱️ ĐỒNG HỒ ĐỒNG BỘ HIỆU ỨNG (SILVER SHIMMER) --- */
       #liveClock {
         position: relative;
         background: rgba(10, 10, 10, 0.85);
@@ -499,7 +610,7 @@
       /* --- 🛠️ Toolbar --- */
       .toolbar {
         position: fixed;
-        bottom: 30px;
+        bottom: 30px; /* Essential to stay inside the 100px JS mousemove trigger zone */
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -510,13 +621,14 @@
         border-radius: 100px;
         border: 1px solid rgba(138, 10, 10, 0.1);
         box-shadow: 0 15px 35px rgba(138, 10, 10, 0.15);
-        z-index: 200;
+        z-index: 100;
         transition:
           transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
           opacity 0.4s ease;
         flex-wrap: nowrap;
         white-space: nowrap;
       }
+
       .fullscreen-mode .toolbar {
         transform: translate(-50%, 150%);
         opacity: 0;
@@ -583,7 +695,6 @@
         box-shadow: 0 0 0 2px var(--action-lead) inset;
       }
 
-      /* 🎥 CSS cho chức năng Ghi Hình */
       @keyframes recordingPulse {
         0% {
           box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
@@ -605,7 +716,7 @@
       .toast-notification {
         position: fixed;
         top: 25px;
-        right: 25px;
+        right: 0px;
         background: rgba(255, 255, 255, 0.95);
         color: var(--text-neutral);
         border-left: 5px solid var(--action-lead);
@@ -682,25 +793,6 @@
         border-color: var(--action-lead);
       }
 
-      .floating-heart {
-        position: fixed;
-        bottom: 20px;
-        right: 30px;
-        font-size: 50px;
-        animation: float 4s ease-in-out infinite;
-        opacity: 0.6;
-        z-index: 10;
-        pointer-events: none;
-      }
-      @keyframes float {
-        0%,
-        100% {
-          transform: translateY(0) rotate(0deg);
-        }
-        50% {
-          transform: translateY(-20px) rotate(10deg);
-        }
-      }
       .license-status {
         font-weight: 700;
         font-size: 12px;
@@ -788,28 +880,45 @@
     <!-- 📸 Main Layout -->
     <div class="app-container">
       <div class="preview-wrapper">
-        <div class="cam-ui">
-          <!-- Mặc định khởi chạy ở trạng thái previewing -->
-          <div class="rec-indicator previewing" id="recIndicatorUI">
-            <div class="rec-dot"></div>
-            <span id="recText">LIVE PREVIEW</span>
+        <!-- Video Container -->
+        <div class="video-container-inner">
+          <div class="cam-ui">
+            <!-- Mặc định khởi chạy ở trạng thái previewing -->
+            <div class="rec-indicator previewing" id="recIndicatorUI">
+              <div class="rec-dot"></div>
+              <span id="recText">LIVE PREVIEW</span>
+            </div>
+            <div id="liveClock">12:00 AM</div>
           </div>
-          <div id="liveClock">12:00 AM</div>
+
+          <div class="composition-grid" id="gridOverlay">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+
+          <video
+            id="preview"
+            class="flipped"
+            autoplay
+            playsinline
+            muted
+          ></video>
         </div>
 
-        <div class="composition-grid" id="gridOverlay">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
+        <!-- ✨ NEW: Simple Player UI -->
+        <div class="simple-player-ui">
+          <div class="player-text-row">
+            <span class="player-title">Filmong Live Preview</span>
+            <span class="player-time"></span>
+          </div>
+          <div class="player-timeline-bg">
+            <div class="player-timeline-fill"></div>
+          </div>
         </div>
-
-        <!-- Mặc định thêm class 'flipped' để lật ngang ngay từ đầu -->
-        <video id="preview" class="flipped" autoplay playsinline muted></video>
       </div>
     </div>
-
-    <div class="floating-heart">💖</div>
 
     <!-- 🛠️ Toolbar -->
     <div class="toolbar" id="toolbar">
