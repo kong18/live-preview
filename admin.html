@@ -443,6 +443,21 @@
         font-style: italic;
       }
 
+      .th-filter {
+        display: grid;
+        gap: 8px;
+      }
+
+      .col-filter {
+        width: 100%;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+        padding: 8px 10px;
+        font-size: 13px;
+        border-radius: 8px;
+      }
+
       .small {
         font-size: 12px;
         color: var(--muted);
@@ -602,7 +617,18 @@
           <table>
             <thead>
               <tr>
-                <th>Token</th>
+                <th>
+                  <div class="th-filter">
+                    <span>Token</span>
+                    <input
+                      id="tokenFilter"
+                      class="col-filter"
+                      type="search"
+                      placeholder="Lọc token / hash…"
+                      autocomplete="off"
+                    />
+                  </div>
+                </th>
                 <th>Key Hash</th>
                 <th>Plan</th>
                 <th>Status</th>
@@ -643,6 +669,7 @@
         email: localStorage.getItem("admin_email") || "",
         createdKeys: [],
         licenses: [],
+        filter: "",
         pagination: { page: 1, pageSize: 20, total: 0, pages: 0 },
       };
 
@@ -667,6 +694,7 @@
         prevPageBtn: document.getElementById("prevPageBtn"),
         nextPageBtn: document.getElementById("nextPageBtn"),
         pageInfo: document.getElementById("pageInfo"),
+        tokenFilter: document.getElementById("tokenFilter"),
       };
 
       function setAlert(node, type, message) {
@@ -837,14 +865,19 @@
 
       function renderLicenses() {
         if (!state.licenses.length) {
+          const emptyMsg = state.filter
+            ? `Không tìm thấy token khớp "${escapeHtml(state.filter)}".`
+            : "Chưa có license nào. Hãy tạo key đầu tiên.";
           el.licenseRows.innerHTML = `
           <tr>
             <td colspan="8">
-              <div class="empty">Chưa có license nào. Hãy tạo key đầu tiên.</div>
+              <div class="empty">${emptyMsg}</div>
             </td>
           </tr>
         `;
-          el.listMeta.textContent = "0 license";
+          el.listMeta.textContent = state.filter
+            ? `0 / ${state.filter} match`
+            : "0 license";
           renderPagination();
           return;
         }
@@ -963,14 +996,13 @@
         el.refreshBtn.textContent = "Refreshing...";
 
         const pageSize = state.pagination.pageSize || 20;
+        const params = new URLSearchParams({ page, pageSize });
+        if (state.filter) params.set("q", state.filter);
 
         try {
-          const res = await fetch(
-            `/api/admin/keys?page=${page}&pageSize=${pageSize}`,
-            {
-              headers: authHeaders(),
-            },
-          );
+          const res = await fetch(`/api/admin/keys?${params.toString()}`, {
+            headers: authHeaders(),
+          });
           const data = await res.json();
 
           if (!res.ok) {
@@ -1145,6 +1177,18 @@
         if (state.pagination.page < (state.pagination.pages || 1)) {
           refreshLicenses(state.pagination.page + 1);
         }
+      });
+
+      let filterTimer;
+      el.tokenFilter.addEventListener("input", () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(() => {
+          const next = el.tokenFilter.value.trim();
+          if (next === state.filter) return;
+          state.filter = next;
+          // A new filter changes the result set, so always start at page 1.
+          refreshLicenses(1);
+        }, 300);
       });
 
       [el.password, el.email].forEach((input) => {
