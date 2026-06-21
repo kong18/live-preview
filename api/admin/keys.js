@@ -48,48 +48,97 @@ module.exports = async function adminKeysHandler(req, res) {
 /**
  * List all licenses
  */
+// Shape a raw KV license hash into the response object the UI expects.
+function mapLicense(hash, license) {
+  return {
+    // ✅ Full 64-char hash for API calls (revoke, validate, etc.)
+    key_hash: hash,
+
+    // ✅ Truncated hash for UI display only
+    hash: `${hash.slice(0, 8)}...${hash.slice(-8)}`,
+
+    // ✅ Original plaintext token (null for legacy keys created before
+    // we started storing it — those remain hash-only / not recoverable)
+    key: license.plain_key || null,
+
+    plan: license.plan,
+    // ✅ Always ensure revoked is boolean (handle both "true"/"false" strings and missing values)
+    revoked: license.revoked === "true" || license.revoked === true,
+    bound_fingerprint: license.bound_fingerprint ? "bound" : "unbound",
+    created_at: license.created_at,
+    expires_at: license.expires_at,
+
+    // Optional: helpful metadata
+    activated: !!license.activated_at,
+    last_seen: license.last_seen,
+  };
+}
+
+// Load + map a license hash, returning null if the record is missing/empty.
+async function loadLicense(hash) {
+  const license = await kv.hgetall(`license:${hash}`);
+  if (!license || Object.keys(license).length === 0) return null;
+  return mapLicense(hash, license);
+}
+
+// Filter path: load every license so the match spans all pages, then paginate.
+async function filterLicenses(hashes, query, start, pageSize) {
+  const matches = [];
+  for (const hash of hashes) {
+    const mapped = await loadLicense(hash);
+    if (!mapped) continue;
+
+    const token = (mapped.key || "").toLowerCase();
+    if (token.includes(query) || hash.toLowerCase().includes(query)) {
+      matches.push(mapped);
+    }
+  }
+  return { items: matches.slice(start, start + pageSize), total: matches.length };
+}
+
+// Unfiltered path: only load the requested page slice (cheap).
+async function pageLicenses(hashes, start, pageSize) {
+  const items = [];
+  for (const hash of hashes.slice(start, start + pageSize)) {
+    const mapped = await loadLicense(hash);
+    if (mapped) items.push(mapped);
+  }
+  return { items, total: hashes.length };
+}
+
 async function handleListKeys(req, res) {
-  const page = Number.parseInt(req.query.page || "1", 10);
-  const pageSize = Number.parseInt(req.query.pageSize || "20", 10);
+  // Clamp inputs so bad query params can't break pagination
+  const page = Math.max(1, Number.parseInt(req.query.page || "1", 10) || 1);
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number.parseInt(req.query.pageSize || "20", 10) || 20)
+  );
+
+  // Optional token filter (matches plaintext token or hash, case-insensitive)
+  const query = (req.query.q || "").toString().trim().toLowerCase();
+  const start = (page - 1) * pageSize;
 
   try {
-    // Get all license hashes from sorted set
+    // Get all license hashes from sorted set, newest first.
+    // Score = creation timestamp, so `rev: true` returns the latest keys first.
     const allHashes = await kv.zrange("licenses:all", 0, -1, {
       withScores: true,
+      rev: true,
     });
 
-    const total = allHashes.length / 2; // withScores returns [member, score, member, score, ...]
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-
-    const paginated = [];
-    for (let i = start * 2; i < Math.min(end * 2, allHashes.length); i += 2) {
-      const hash = allHashes[i];
-      const license = await kv.hgetall(`license:${hash}`);
-      if (license && Object.keys(license).length > 0) {
-        paginated.push({
-          // ✅ Full 64-char hash for API calls (revoke, validate, etc.)
-          key_hash: hash,
-
-          // ✅ Truncated hash for UI display only
-          hash: `${hash.slice(0, 8)}...${hash.slice(-8)}`,
-
-          plan: license.plan,
-          // ✅ Always ensure revoked is boolean (handle both "true"/"false" strings and missing values)
-          revoked: license.revoked === "true" || license.revoked === true,
-          bound_fingerprint: license.bound_fingerprint ? "bound" : "unbound",
-          created_at: license.created_at,
-          expires_at: license.expires_at,
-
-          // Optional: helpful metadata
-          activated: !!license.activated_at,
-          last_seen: license.last_seen,
-        });
-      }
+    // withScores returns [member, score, member, score, ...] — pull just the
+    // hashes, preserving the newest-first order.
+    const hashes = [];
+    for (let i = 0; i < allHashes.length; i += 2) {
+      hashes.push(allHashes[i]);
     }
 
+    const { items, total } = query
+      ? await filterLicenses(hashes, query, start, pageSize)
+      : await pageLicenses(hashes, start, pageSize);
+
     return res.status(200).json({
-      licenses: paginated,
+      licenses: items,
       pagination: {
         page,
         pageSize,
@@ -142,6 +191,10 @@ async function handleCreateKeys(req, res) {
       await kv.hmset(licenseKey, {
         prefix: "LIVE",
         plan,
+        // Plaintext token so the admin dashboard can display/copy the
+        // original key (hash stays the lookup id). Older licenses created
+        // before this field existed simply won't have it.
+        plain_key: plainKey,
         expires_at: expiresAt ? expiresAt.toString() : "null",
         revoked: "false",
         created_at: now.toString(),
