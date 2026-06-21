@@ -421,6 +421,28 @@
         color: var(--muted);
       }
 
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 14px 20px;
+        border-top: 1px solid var(--border);
+      }
+
+      .page-info {
+        color: var(--muted);
+        font-size: 13px;
+        min-width: 110px;
+        text-align: center;
+      }
+
+      .legacy-token {
+        color: var(--muted);
+        font-size: 12px;
+        font-style: italic;
+      }
+
       .small {
         font-size: 12px;
         color: var(--muted);
@@ -580,6 +602,7 @@
           <table>
             <thead>
               <tr>
+                <th>Token</th>
                 <th>Key Hash</th>
                 <th>Plan</th>
                 <th>Status</th>
@@ -591,7 +614,7 @@
             </thead>
             <tbody id="licenseRows">
               <tr>
-                <td colspan="7">
+                <td colspan="8">
                   <div class="empty">
                     Chưa có dữ liệu. Hãy login rồi bấm
                     <strong>Refresh List</strong> hoặc
@@ -601,6 +624,15 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="pagination" id="pagination">
+          <button class="btn-ghost" id="prevPageBtn" type="button" disabled>
+            ← Trước
+          </button>
+          <span class="page-info" id="pageInfo">Trang 1 / 1</span>
+          <button class="btn-ghost" id="nextPageBtn" type="button" disabled>
+            Sau →
+          </button>
         </div>
       </section>
     </main>
@@ -632,6 +664,9 @@
         licenseRows: document.getElementById("licenseRows"),
         createdKeysWrap: document.getElementById("createdKeysWrap"),
         createdKeysList: document.getElementById("createdKeysList"),
+        prevPageBtn: document.getElementById("prevPageBtn"),
+        nextPageBtn: document.getElementById("nextPageBtn"),
+        pageInfo: document.getElementById("pageInfo"),
       };
 
       function setAlert(node, type, message) {
@@ -790,16 +825,27 @@
           });
       }
 
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (ch) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[ch]);
+      }
+
       function renderLicenses() {
         if (!state.licenses.length) {
           el.licenseRows.innerHTML = `
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <div class="empty">Chưa có license nào. Hãy tạo key đầu tiên.</div>
             </td>
           </tr>
         `;
           el.listMeta.textContent = "0 license";
+          renderPagination();
           return;
         }
 
@@ -809,12 +855,23 @@
             const displayHash = fullHash
               ? `${fullHash.slice(0, 8)}...${fullHash.slice(-8)}`
               : license.hash || "unknown";
-            
+
+            // Original plaintext token. Legacy licenses (created before we
+            // stored it) have no key, so show a muted fallback instead.
+            const plainKey = license.key || "";
+            const tokenCell = plainKey
+              ? `<div class="key-box" style="margin:0;">
+                   <code title="${escapeHtml(plainKey)}">${escapeHtml(plainKey)}</code>
+                   <button class="btn-ghost" data-copy-token="${escapeHtml(plainKey)}">Copy</button>
+                 </div>`
+              : `<span class="legacy-token" title="Token cũ chỉ lưu hash, không thể khôi phục">— hash-only (legacy)</span>`;
+
             // Check if already revoked
             const isRevoked = license.revoked === true || license.revoked === "true";
 
             return `
         <tr>
+          <td>${tokenCell}</td>
           <td>
             <div class="key-box" style="margin:0;">
               <code title="${fullHash}">${displayHash}</code>
@@ -837,6 +894,21 @@
       `;
           })
           .join("");
+
+        el.licenseRows
+          .querySelectorAll("[data-copy-token]")
+          .forEach((button) => {
+            button.addEventListener("click", async () => {
+              const token = button.dataset.copyToken;
+              try {
+                await navigator.clipboard.writeText(token);
+                button.textContent = "Copied";
+                setTimeout(() => (button.textContent = "Copy"), 1200);
+              } catch {
+                setAlert(el.keyAlert, "error", "Không thể copy token.");
+              }
+            });
+          });
 
         el.licenseRows
           .querySelectorAll("[data-copy-hash]")
@@ -865,9 +937,18 @@
           });
 
         el.listMeta.textContent = `${state.pagination.total} license · trang ${state.pagination.page}/${state.pagination.pages || 1}`;
+        renderPagination();
       }
 
-      async function refreshLicenses() {
+      function renderPagination() {
+        const { page, pages } = state.pagination;
+        const totalPages = pages || 1;
+        el.pageInfo.textContent = `Trang ${page} / ${totalPages}`;
+        el.prevPageBtn.disabled = !state.token || page <= 1;
+        el.nextPageBtn.disabled = !state.token || page >= totalPages;
+      }
+
+      async function refreshLicenses(page = state.pagination.page || 1) {
         clearAlert(el.keyAlert);
         if (!state.token) {
           setAlert(
@@ -881,10 +962,15 @@
         el.refreshBtn.disabled = true;
         el.refreshBtn.textContent = "Refreshing...";
 
+        const pageSize = state.pagination.pageSize || 20;
+
         try {
-          const res = await fetch("/api/admin/keys?page=1&pageSize=20", {
-            headers: authHeaders(),
-          });
+          const res = await fetch(
+            `/api/admin/keys?page=${page}&pageSize=${pageSize}`,
+            {
+              headers: authHeaders(),
+            },
+          );
           const data = await res.json();
 
           if (!res.ok) {
@@ -896,6 +982,8 @@
             ...item,
             key_hash: item.key_hash || item.hash,
             display_hash: item.hash,
+            // Original plaintext token (null for legacy keys)
+            key: item.key || null,
             // Explicitly ensure revoked is a boolean
             revoked: item.revoked === true || item.revoked === "true",
           }));
@@ -948,7 +1036,7 @@
             "success",
             `Đã tạo ${state.createdKeys.length} key cho plan ${plan}.`,
           );
-          await refreshLicenses();
+          await refreshLicenses(1);
         } catch (error) {
           setAlert(
             el.keyAlert,
@@ -1007,6 +1095,7 @@
       function exportCsv() {
         const rows = [
           [
+            "token",
             "hash",
             "plan",
             "revoked",
@@ -1015,6 +1104,7 @@
             "expires_at",
           ],
           ...state.licenses.map((license) => [
+            license.key || "",
             license.hash,
             license.plan,
             license.revoked ? "true" : "false",
@@ -1044,8 +1134,18 @@
       el.loginBtn.addEventListener("click", login);
       el.logoutBtn.addEventListener("click", logout);
       el.createBtn.addEventListener("click", createKeys);
-      el.refreshBtn.addEventListener("click", refreshLicenses);
+      el.refreshBtn.addEventListener("click", () => refreshLicenses());
       el.exportBtn.addEventListener("click", exportCsv);
+      el.prevPageBtn.addEventListener("click", () => {
+        if (state.pagination.page > 1) {
+          refreshLicenses(state.pagination.page - 1);
+        }
+      });
+      el.nextPageBtn.addEventListener("click", () => {
+        if (state.pagination.page < (state.pagination.pages || 1)) {
+          refreshLicenses(state.pagination.page + 1);
+        }
+      });
 
       [el.password, el.email].forEach((input) => {
         input.addEventListener("keydown", (event) => {

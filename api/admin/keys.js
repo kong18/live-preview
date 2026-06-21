@@ -49,13 +49,19 @@ module.exports = async function adminKeysHandler(req, res) {
  * List all licenses
  */
 async function handleListKeys(req, res) {
-  const page = Number.parseInt(req.query.page || "1", 10);
-  const pageSize = Number.parseInt(req.query.pageSize || "20", 10);
+  // Clamp inputs so bad query params can't break pagination
+  const page = Math.max(1, Number.parseInt(req.query.page || "1", 10) || 1);
+  const pageSize = Math.min(
+    100,
+    Math.max(1, Number.parseInt(req.query.pageSize || "20", 10) || 20)
+  );
 
   try {
-    // Get all license hashes from sorted set
+    // Get all license hashes from sorted set, newest first.
+    // Score = creation timestamp, so `rev: true` returns the latest keys first.
     const allHashes = await kv.zrange("licenses:all", 0, -1, {
       withScores: true,
+      rev: true,
     });
 
     const total = allHashes.length / 2; // withScores returns [member, score, member, score, ...]
@@ -73,6 +79,10 @@ async function handleListKeys(req, res) {
 
           // ✅ Truncated hash for UI display only
           hash: `${hash.slice(0, 8)}...${hash.slice(-8)}`,
+
+          // ✅ Original plaintext token (null for legacy keys created before
+          // we started storing it — those remain hash-only / not recoverable)
+          key: license.plain_key || null,
 
           plan: license.plan,
           // ✅ Always ensure revoked is boolean (handle both "true"/"false" strings and missing values)
@@ -142,6 +152,10 @@ async function handleCreateKeys(req, res) {
       await kv.hmset(licenseKey, {
         prefix: "LIVE",
         plan,
+        // Plaintext token so the admin dashboard can display/copy the
+        // original key (hash stays the lookup id). Older licenses created
+        // before this field existed simply won't have it.
+        plain_key: plainKey,
         expires_at: expiresAt ? expiresAt.toString() : "null",
         revoked: "false",
         created_at: now.toString(),
