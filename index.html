@@ -284,6 +284,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        filter: brightness(var(--rec-brightness, 1));
         transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
       #preview.flipped {
@@ -293,6 +294,30 @@
         transform: scaleY(-1);
       }
       #preview.flipped.flipped-v {
+        transform: scaleX(-1) scaleY(-1);
+      }
+
+      /* 🎨 Canvas WebGL hiển thị kết quả màu (đè lên video, dưới overlay) */
+      #glPreview {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1; /* trên video (in-flow), dưới lưới(5)/REC(10)/player(20) */
+        display: none; /* chỉ hiện khi pipeline WebGL hoạt động */
+        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      #glPreview.active {
+        display: block;
+      }
+      #glPreview.flipped {
+        transform: scaleX(-1);
+      }
+      #glPreview.flipped-v {
+        transform: scaleY(-1);
+      }
+      #glPreview.flipped.flipped-v {
         transform: scaleX(-1) scaleY(-1);
       }
 
@@ -695,6 +720,41 @@
         box-shadow: 0 0 0 2px var(--action-lead) inset;
       }
 
+      /* Ẩn nút có điều kiện: nút Ghi Hình (mở khóa bằng 6 lần bấm)
+         và nút bật/tắt LUT (ẩn cho tới khi nạp file .cube) */
+      #btnRecord.rec-hidden,
+      #btnLutLoad.rec-hidden,
+      #btnLutToggle.rec-hidden,
+      #brightnessControl.rec-hidden {
+        display: none;
+      }
+
+      /* 🔆 Điều chỉnh độ sáng khi ghi hình */
+      .brightness-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        height: 40px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: inherit;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .brightness-control input[type="range"] {
+        width: 110px;
+        accent-color: var(--action-lead);
+        cursor: pointer;
+      }
+      #brightnessValue {
+        min-width: 42px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.85;
+      }
+
       @keyframes recordingPulse {
         0% {
           box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
@@ -905,6 +965,10 @@
             playsinline
             muted
           ></video>
+
+          <!-- 🎨 Lớp xử lý màu WebGL (độ sáng + LUT). Hiển thị đè lên video,
+               nằm dưới các lớp overlay (REC, lưới, player). -->
+          <canvas id="glPreview" class="flipped"></canvas>
         </div>
 
         <!-- ✨ NEW: Simple Player UI -->
@@ -935,8 +999,55 @@
         onchange="switchCamera()"
       ></select>
 
-      <!-- Nút Ghi Hình Mới -->
-      <button id="btnRecord" onclick="toggleRecording()">🔴 Ghi Hình</button>
+      <!-- 🎨 LUT (.cube) — ẩn mặc định, mở khóa cùng nút Ghi Hình (bấm 6 lần) -->
+      <button
+        id="btnLutLoad"
+        class="rec-hidden"
+        onclick="openLutPicker()"
+        title="Tải file màu .cube"
+      >
+        📁 Tải LUT
+      </button>
+      <button
+        id="btnLutToggle"
+        class="rec-hidden"
+        onclick="toggleLut()"
+        title="Bật/Tắt LUT"
+      >
+        🎨 LUT
+      </button>
+      <input
+        type="file"
+        id="lutFileInput"
+        accept=".cube"
+        aria-label="Chọn file LUT .cube"
+        style="display: none"
+        onchange="handleLutFile(event)"
+      />
+
+      <!-- 🔆 Độ sáng ghi hình — ẩn mặc định, mở khóa cùng nút Ghi Hình (bấm 6 lần) -->
+      <div
+        id="brightnessControl"
+        class="brightness-control rec-hidden"
+        title="Độ sáng (áp dụng cho cả video ghi lại)"
+      >
+        <span>🔆</span>
+        <input
+          type="range"
+          id="brightnessSlider"
+          aria-label="Điều chỉnh độ sáng ghi hình"
+          min="50"
+          max="200"
+          value="100"
+          oninput="setBrightness(this.value)"
+        />
+        <span id="brightnessValue">100%</span>
+      </div>
+
+      <!-- Nút Ghi Hình Mới (ẩn mặc định, mở khóa bằng 6 lần bấm vào màn hình) -->
+      <button id="btnRecord" class="rec-hidden" onclick="toggleRecording()">
+        🔴 Ghi Hình
+      </button>
 
       <!-- 🔄 Nguồn -->
       <button onclick="changeSource()">🔄 Nguồn</button>
@@ -980,6 +1091,58 @@
       setInterval(updateClock, 1000);
       updateClock();
 
+      /* =======================================================
+           🔓 MỞ KHÓA GHI HÌNH + LUT (bấm 6 lần liên tiếp vào màn hình)
+           ======================================================= */
+      let recUnlocked = false;
+      (function setupRecordUnlock() {
+        const btn = document.getElementById("btnRecord");
+        const wrapper = document.querySelector(".preview-wrapper");
+        if (!btn || !wrapper) return;
+
+        // Hiện cả nút Ghi Hình lẫn bộ điều khiển LUT
+        const reveal = () => {
+          recUnlocked = true;
+          btn.classList.remove("rec-hidden");
+          const lutLoadBtn = document.getElementById("btnLutLoad");
+          if (lutLoadBtn) lutLoadBtn.classList.remove("rec-hidden");
+          const brightnessCtrl = document.getElementById("brightnessControl");
+          if (brightnessCtrl) brightnessCtrl.classList.remove("rec-hidden");
+          // Hiện nút Bật/Tắt LUT nếu đã có LUT nạp sẵn từ phiên trước
+          applyLutUiState();
+        };
+
+        // Đã mở khóa trước đó -> hiện luôn, không cần bấm lại
+        if (localStorage.getItem("recUnlocked") === "1") {
+          reveal();
+          return;
+        }
+
+        const UNLOCK_CLICKS = 6;
+        const WINDOW_MS = 3000; // 6 cú bấm phải nằm trong 3 giây kể từ cú đầu
+        let clickCount = 0;
+        let windowTimer = null;
+
+        wrapper.addEventListener("click", () => {
+          if (!btn.classList.contains("rec-hidden")) return; // đã mở khóa
+
+          clickCount++;
+          if (clickCount === 1) {
+            windowTimer = setTimeout(() => {
+              clickCount = 0;
+            }, WINDOW_MS);
+          }
+
+          if (clickCount >= UNLOCK_CLICKS) {
+            clearTimeout(windowTimer);
+            clickCount = 0;
+            localStorage.setItem("recUnlocked", "1");
+            reveal();
+            showNotification("🎬 Đã mở khóa nút Ghi Hình!");
+          }
+        });
+      })();
+
       function toggleGrid() {
         document.getElementById("gridOverlay").classList.toggle("visible");
         document.getElementById("btnGrid").classList.toggle("active");
@@ -1011,6 +1174,406 @@
       }
 
       /* =======================================================
+           2.5 COLOR PIPELINE (WebGL: brightness + 3D LUT .cube)
+           =======================================================
+           Áp dụng độ sáng và LUT trên GPU. Canvas WebGL vừa là
+           hình hiển thị (live preview) vừa là nguồn ghi hình, nên
+           màu xem trước và màu trong file luôn giống nhau. */
+      let gl = null;
+      let glProgram = null;
+      let glReady = false; // WebGL khởi tạo thành công?
+      let glActive = false; // có đang chạy vòng render không?
+      let glRAF = null;
+      let videoTexture = null;
+      let lutTexture = null;
+      let glLocs = {};
+      let glPreviewEl = null;
+
+      // Trạng thái LUT
+      let lutEnabled = false; // người dùng bật/tắt
+      let lutLoaded = false; // đã có dữ liệu LUT trên GPU
+      let lutSize = 0;
+      let pendingLut = null; // LUT đã parse nhưng chờ GPU sẵn sàng
+      let lutName = "";
+
+      const VERT_SRC = `
+        attribute vec2 aPos;
+        varying vec2 vUv;
+        void main() {
+          vUv = (aPos + 1.0) / 2.0;
+          gl_Position = vec4(aPos, 0.0, 1.0);
+        }`;
+
+      // LUT đóng gói dạng ảnh 2D: rộng = N (đỏ), cao = N*N (lục trong lát, lam chọn lát).
+      const FRAG_SRC = `
+        precision highp float;
+        varying vec2 vUv;
+        uniform sampler2D uVideo;
+        uniform sampler2D uLut;
+        uniform float uBrightness;
+        uniform float uLutEnabled;
+        uniform float uLutSize;
+
+        vec3 applyLUT(vec3 color) {
+          float size = uLutSize;
+          vec3 c = clamp(color, 0.0, 1.0);
+          float r = c.r * (size - 1.0);
+          float g = c.g * (size - 1.0);
+          float b = c.b * (size - 1.0);
+          float bLow = floor(b);
+          float bHigh = min(bLow + 1.0, size - 1.0);
+          float bf = b - bLow;
+          float u = (r + 0.5) / size;
+          float vLow = (bLow * size + g + 0.5) / (size * size);
+          float vHigh = (bHigh * size + g + 0.5) / (size * size);
+          vec3 cl = texture2D(uLut, vec2(u, vLow)).rgb;
+          vec3 ch = texture2D(uLut, vec2(u, vHigh)).rgb;
+          return mix(cl, ch, bf);
+        }
+
+        void main() {
+          vec3 color = texture2D(uVideo, vUv).rgb;
+          color *= uBrightness;
+          if (uLutEnabled > 0.5) {
+            color = applyLUT(clamp(color, 0.0, 1.0));
+          }
+          gl_FragColor = vec4(color, 1.0);
+        }`;
+
+      function compileShader(type, src) {
+        const sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+          throw new Error("Shader lỗi: " + gl.getShaderInfoLog(sh));
+        }
+        return sh;
+      }
+
+      // Khởi tạo WebGL một lần (lazy). Trả về true nếu sẵn sàng.
+      function initGL() {
+        if (glReady) return true;
+        glPreviewEl = document.getElementById("glPreview");
+        try {
+          gl =
+            glPreviewEl.getContext("webgl", { preserveDrawingBuffer: true }) ||
+            glPreviewEl.getContext("experimental-webgl", {
+              preserveDrawingBuffer: true,
+            });
+          if (!gl) return false;
+
+          glProgram = gl.createProgram();
+          gl.attachShader(glProgram, compileShader(gl.VERTEX_SHADER, VERT_SRC));
+          gl.attachShader(
+            glProgram,
+            compileShader(gl.FRAGMENT_SHADER, FRAG_SRC),
+          );
+          gl.linkProgram(glProgram);
+          if (!gl.getProgramParameter(glProgram, gl.LINK_STATUS)) {
+            throw new Error(gl.getProgramInfoLog(glProgram));
+          }
+          gl.useProgram(glProgram);
+
+          // Quad toàn màn hình
+          const buf = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+          gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+            gl.STATIC_DRAW,
+          );
+          const aPos = gl.getAttribLocation(glProgram, "aPos");
+          gl.enableVertexAttribArray(aPos);
+          gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+          glLocs = {
+            uVideo: gl.getUniformLocation(glProgram, "uVideo"),
+            uLut: gl.getUniformLocation(glProgram, "uLut"),
+            uBrightness: gl.getUniformLocation(glProgram, "uBrightness"),
+            uLutEnabled: gl.getUniformLocation(glProgram, "uLutEnabled"),
+            uLutSize: gl.getUniformLocation(glProgram, "uLutSize"),
+          };
+
+          videoTexture = createTexture();
+          lutTexture = createTexture();
+          // 1x1 trắng để texture LUT luôn "hoàn chỉnh" khi chưa nạp .cube
+          gl.bindTexture(gl.TEXTURE_2D, lutTexture);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            1,
+            1,
+            0,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            new Uint8Array([255, 255, 255, 255]),
+          );
+
+          glReady = true;
+
+          // Nếu có LUT đang chờ (khôi phục từ localStorage) -> nạp lên GPU
+          if (pendingLut) {
+            uploadLutTexture(pendingLut);
+            pendingLut = null;
+          }
+          return true;
+        } catch (e) {
+          console.warn("WebGL không khả dụng, dùng chế độ dự phòng:", e);
+          gl = null;
+          glReady = false;
+          return false;
+        }
+      }
+
+      function createTexture() {
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return tex;
+      }
+
+      // Bật pipeline WebGL khi có nguồn phát. Dự phòng nếu WebGL hỏng.
+      function ensureGlPipeline() {
+        if (!initGL()) {
+          // Không có WebGL: giữ nguyên hành vi cũ (hiện video, lọc CSS)
+          if (glPreviewEl) glPreviewEl.classList.remove("active");
+          return;
+        }
+        glActive = true;
+        glPreviewEl.classList.add("active");
+        if (!glRAF) glRender();
+      }
+
+      function stopGlPipeline() {
+        glActive = false;
+        if (glRAF) {
+          cancelAnimationFrame(glRAF);
+          glRAF = null;
+        }
+        if (glPreviewEl) glPreviewEl.classList.remove("active");
+      }
+
+      function glRender() {
+        glRAF = null;
+        if (!glActive || !glReady) return;
+
+        if (preview.readyState >= 2 && preview.videoWidth) {
+          // Đồng bộ kích thước buffer canvas với độ phân giải video
+          if (
+            glPreviewEl.width !== preview.videoWidth ||
+            glPreviewEl.height !== preview.videoHeight
+          ) {
+            glPreviewEl.width = preview.videoWidth;
+            glPreviewEl.height = preview.videoHeight;
+            gl.viewport(0, 0, glPreviewEl.width, glPreviewEl.height);
+          }
+
+          // Nạp khung video hiện tại
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, videoTexture);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGB,
+            gl.RGB,
+            gl.UNSIGNED_BYTE,
+            preview,
+          );
+          gl.uniform1i(glLocs.uVideo, 0);
+
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, lutTexture);
+          gl.uniform1i(glLocs.uLut, 1);
+
+          gl.uniform1f(glLocs.uBrightness, recBrightness);
+          gl.uniform1f(
+            glLocs.uLutEnabled,
+            lutEnabled && lutLoaded ? 1.0 : 0.0,
+          );
+          gl.uniform1f(glLocs.uLutSize, lutSize || 2);
+
+          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
+
+        glRAF = requestAnimationFrame(glRender);
+      }
+
+      /* ---------- Parse & nạp LUT .cube ---------- */
+      function parseCube(text) {
+        const lines = text.split(/\r?\n/);
+        let size = 0;
+        const data = [];
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line || line.startsWith("#")) continue;
+          const upper = line.toUpperCase();
+          if (upper.startsWith("TITLE")) continue;
+          if (upper.startsWith("LUT_3D_SIZE")) {
+            size = Number.parseInt(line.split(/\s+/)[1], 10);
+            continue;
+          }
+          if (upper.startsWith("LUT_1D_SIZE")) {
+            throw new Error("File LUT 1D chưa được hỗ trợ (chỉ hỗ trợ 3D).");
+          }
+          if (upper.startsWith("DOMAIN_MIN") || upper.startsWith("DOMAIN_MAX"))
+            continue;
+          const p = line.split(/\s+/);
+          if (p.length >= 3) {
+            const r = parseFloat(p[0]);
+            const g = parseFloat(p[1]);
+            const b = parseFloat(p[2]);
+            if (!isNaN(r) && !isNaN(g) && !isNaN(b)) data.push(r, g, b);
+          }
+        }
+        if (!size || data.length !== size * size * size * 3) {
+          throw new Error("File .cube không hợp lệ hoặc thiếu dữ liệu.");
+        }
+        return { size, data };
+      }
+
+      // Đóng gói LUT 3D thành ảnh 2D (rộng=N, cao=N*N) và nạp lên GPU.
+      function uploadLutTexture(parsed) {
+        if (!glReady) {
+          pendingLut = parsed;
+          return;
+        }
+        const N = parsed.size;
+        const src = parsed.data;
+        const width = N;
+        const height = N * N;
+        const buf = new Uint8Array(width * height * 4);
+        const to255 = (x) => Math.round(Math.min(Math.max(x, 0), 1) * 255);
+        for (let b = 0; b < N; b++) {
+          for (let g = 0; g < N; g++) {
+            for (let r = 0; r < N; r++) {
+              const L = (r + g * N + b * N * N) * 3; // .cube: đỏ biến thiên nhanh nhất
+              const X = r;
+              const Y = b * N + g;
+              const dst = (Y * width + X) * 4;
+              buf[dst] = to255(src[L]);
+              buf[dst + 1] = to255(src[L + 1]);
+              buf[dst + 2] = to255(src[L + 2]);
+              buf[dst + 3] = 255;
+            }
+          }
+        }
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, lutTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          width,
+          height,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          buf,
+        );
+        lutSize = N;
+        lutLoaded = true;
+      }
+
+      /* ---------- UI handlers cho LUT ---------- */
+      function openLutPicker() {
+        document.getElementById("lutFileInput").click();
+      }
+
+      function handleLutFile(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = parseCube(String(reader.result));
+            uploadLutTexture(parsed);
+            lutName = file.name;
+            lutEnabled = true;
+            applyLutUiState();
+            persistLut(String(reader.result), file.name);
+            showNotification("🎨 Đã áp dụng LUT: " + file.name);
+          } catch (e) {
+            alert("Lỗi đọc LUT: " + e.message);
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = ""; // cho phép chọn lại cùng file
+      }
+
+      function toggleLut() {
+        if (!lutLoaded) {
+          openLutPicker();
+          return;
+        }
+        lutEnabled = !lutEnabled;
+        applyLutUiState();
+        try {
+          localStorage.setItem("lutEnabled", lutEnabled ? "1" : "0");
+        } catch (e) {
+          /* bỏ qua nếu localStorage đầy */
+        }
+      }
+
+      function applyLutUiState() {
+        const toggle = document.getElementById("btnLutToggle");
+        if (!toggle) return;
+        if (lutLoaded && recUnlocked) {
+          toggle.classList.remove("rec-hidden");
+          toggle.classList.toggle("active", lutEnabled);
+          toggle.innerHTML = lutEnabled ? "🎨 LUT: Bật" : "🎨 LUT: Tắt";
+          toggle.title = lutName
+            ? "LUT: " + lutName
+            : "Bật/Tắt LUT";
+        } else {
+          toggle.classList.add("rec-hidden");
+        }
+      }
+
+      function persistLut(cubeText, name) {
+        try {
+          // ~3MB giới hạn an toàn cho localStorage
+          if (cubeText.length > 3_000_000) {
+            showNotification(
+              "⚠️ LUT quá lớn để ghi nhớ — vẫn dùng được trong phiên này.",
+            );
+            return;
+          }
+          localStorage.setItem("lutCube", cubeText);
+          localStorage.setItem("lutName", name);
+          localStorage.setItem("lutEnabled", "1");
+        } catch (e) {
+          /* bỏ qua nếu localStorage đầy */
+        }
+      }
+
+      // Khôi phục LUT đã lưu (gọi lúc tải trang). Nạp GPU khi pipeline sẵn sàng.
+      function restoreSavedLut() {
+        let cubeText = null;
+        try {
+          cubeText = localStorage.getItem("lutCube");
+        } catch (e) {
+          return;
+        }
+        if (!cubeText) return;
+        try {
+          const parsed = parseCube(cubeText);
+          uploadLutTexture(parsed); // -> pendingLut nếu GL chưa init
+          lutName = localStorage.getItem("lutName") || "LUT";
+          lutEnabled = localStorage.getItem("lutEnabled") !== "0";
+          lutLoaded = true; // dữ liệu hợp lệ; sẽ lên GPU khi initGL chạy
+          applyLutUiState();
+        } catch (e) {
+          /* LUT lưu hỏng -> bỏ qua */
+        }
+      }
+
+      /* =======================================================
            3. VIDEO RECORDING FEATURE (30s LIMIT & NOTIFICATION)
            ======================================================= */
       let mediaRecorder = null;
@@ -1021,6 +1584,24 @@
       let recordStartTime = 0;
       let recordTimerInterval = null;
       let recordLimitTimeout = null; // Quản lý thời gian tự động dừng
+
+      // 🔆 Độ sáng + pipeline canvas (để độ sáng được "nướng" vào file ghi)
+      let recBrightness = 1; // 1 = 100%
+      let recCanvas = null;
+      let recCtx = null;
+      let recCanvasStream = null;
+      let recDrawActive = false;
+      let recDrawRAF = null;
+
+      function setBrightness(val) {
+        recBrightness = Number(val) / 100;
+        document.documentElement.style.setProperty(
+          "--rec-brightness",
+          recBrightness,
+        );
+        const lbl = document.getElementById("brightnessValue");
+        if (lbl) lbl.textContent = val + "%";
+      }
 
       // Hàm format giây sang MM:SS hoặc HH:MM:SS
       function formatTime(totalSeconds) {
@@ -1086,7 +1667,35 @@
             videoBitsPerSecond: 8000000,
           };
 
-          mediaRecorder = new MediaRecorder(currentStream, options);
+          // Nguồn ghi: ưu tiên canvas WebGL (đã có độ sáng + LUT "nướng" vào hình).
+          // MediaRecorder chỉ ghi luồng, không ghi bộ lọc CSS — nên phải ghi từ canvas.
+          if (glReady && glActive) {
+            recCanvasStream = glPreviewEl.captureStream(30);
+          } else {
+            // Dự phòng khi không có WebGL: canvas 2D chỉ áp dụng độ sáng.
+            const vw = preview.videoWidth || 1920;
+            const vh = preview.videoHeight || 1080;
+            recCanvas = document.createElement("canvas");
+            recCanvas.width = vw;
+            recCanvas.height = vh;
+            recCtx = recCanvas.getContext("2d");
+            recDrawActive = true;
+            const drawFrame = () => {
+              if (!recDrawActive) return;
+              recCtx.filter = "brightness(" + recBrightness + ")";
+              recCtx.drawImage(preview, 0, 0, recCanvas.width, recCanvas.height);
+              recDrawRAF = requestAnimationFrame(drawFrame);
+            };
+            drawFrame();
+            recCanvasStream = recCanvas.captureStream(30);
+          }
+
+          // Ghi kèm audio gốc nếu có
+          currentStream.getAudioTracks().forEach((t) => {
+            recCanvasStream.addTrack(t);
+          });
+
+          mediaRecorder = new MediaRecorder(recCanvasStream, options);
 
           mediaRecorder.ondataavailable = function (event) {
             if (event.data.size > 0) {
@@ -1162,6 +1771,11 @@
           btnRecord.innerHTML = "⏹ Dừng Ghi";
           btnRecord.classList.add("btn-recording-active");
         } catch (e) {
+          recDrawActive = false;
+          if (recDrawRAF) {
+            cancelAnimationFrame(recDrawRAF);
+            recDrawRAF = null;
+          }
           alert("Lỗi khi khởi tạo ghi hình: " + e.message);
         }
       }
@@ -1177,6 +1791,17 @@
           mediaRecorder.stop();
         }
         isRecording = false;
+
+        // 🔆 Dừng vòng vẽ canvas độ sáng và giải phóng luồng canvas
+        recDrawActive = false;
+        if (recDrawRAF) {
+          cancelAnimationFrame(recDrawRAF);
+          recDrawRAF = null;
+        }
+        if (recCanvasStream) {
+          recCanvasStream.getTracks().forEach((t) => t.stop());
+          recCanvasStream = null;
+        }
 
         // Trả lại class Container về chế độ PREVIEWING thông thường
         const recUI = document.getElementById("recIndicatorUI");
@@ -1207,6 +1832,10 @@
       function toggleFlipH() {
         isFlippedH = !isFlippedH;
         preview.classList.toggle("flipped", isFlippedH);
+        // Canvas WebGL là lớp đang hiển thị nên cũng phải lật theo
+        document
+          .getElementById("glPreview")
+          .classList.toggle("flipped", isFlippedH);
         document
           .getElementById("btnFlipH")
           .classList.toggle("active", isFlippedH);
@@ -1215,6 +1844,9 @@
       function toggleFlipV() {
         isFlippedV = !isFlippedV;
         preview.classList.toggle("flipped-v", isFlippedV);
+        document
+          .getElementById("glPreview")
+          .classList.toggle("flipped-v", isFlippedV);
         document
           .getElementById("btnFlipV")
           .classList.toggle("active", isFlippedV);
@@ -1230,6 +1862,7 @@
           currentStream.getTracks().forEach((t) => t.stop());
           currentStream = null;
         }
+        stopGlPipeline();
         if (perfInterval) {
           clearInterval(perfInterval);
           perfInterval = null;
@@ -1257,6 +1890,7 @@
             await navigator.mediaDevices.getUserMedia(optimizedConstraints);
           currentStream = stream;
           preview.srcObject = stream;
+          ensureGlPipeline();
           trackPerformance(stream.getVideoTracks()[0]);
           document.getElementById("sourceSelector").classList.add("hidden");
           await loadCameras();
@@ -1274,6 +1908,7 @@
           });
           currentStream = stream;
           preview.srcObject = stream;
+          ensureGlPipeline();
           trackPerformance(stream.getVideoTracks()[0]);
           document.getElementById("sourceSelector").classList.add("hidden");
         } catch (e) {
@@ -1312,6 +1947,7 @@
             await navigator.mediaDevices.getUserMedia(switchConstraints);
           currentStream = stream;
           preview.srcObject = stream;
+          ensureGlPipeline();
           trackPerformance(stream.getVideoTracks()[0]);
         } catch (e) {
           alert("Switch Camera Error: " + e.message);
@@ -1531,6 +2167,10 @@
       if (document.readyState === "loading")
         document.addEventListener("DOMContentLoaded", initLicenseFlow);
       else initLicenseFlow();
+
+      // 🎨 Khôi phục LUT đã lưu từ phiên trước (đặt ở cuối script để
+      // mọi biến/hàm của color pipeline đã được khởi tạo xong).
+      restoreSavedLut();
     </script>
   </body>
 </html>
