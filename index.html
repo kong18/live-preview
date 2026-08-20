@@ -287,6 +287,10 @@
         filter: brightness(var(--rec-brightness, 1));
         transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
+      /* Chi bat khi nhiet do mau khac muc chuan (tranh chi phi loc vo ich) */
+      #preview.wb-on {
+        filter: brightness(var(--rec-brightness, 1)) url(#wbFilter);
+      }
       #preview.flipped {
         transform: scaleX(-1);
       }
@@ -725,7 +729,8 @@
       #btnRecord.rec-hidden,
       #btnLutLoad.rec-hidden,
       #btnLutToggle.rec-hidden,
-      #brightnessControl.rec-hidden {
+      #brightnessControl.rec-hidden,
+      #tempControl.rec-hidden {
         display: none;
       }
 
@@ -748,11 +753,28 @@
         accent-color: var(--action-lead);
         cursor: pointer;
       }
-      #brightnessValue {
+      #brightnessValue,
+      #tempValue {
         min-width: 42px;
         text-align: right;
         font-variant-numeric: tabular-nums;
         opacity: 0.85;
+      }
+      #tempValue {
+        min-width: 58px;
+      }
+      /* Hẹp hơn thanh độ sáng để toolbar (nowrap) đỡ bị tràn ngang */
+      #tempSlider {
+        width: 92px;
+      }
+      /* Icon nhiet ke bam duoc: dat lai nhiet do mau ve muc chuan */
+      .brightness-control .ctrl-reset {
+        cursor: pointer;
+        user-select: none;
+        line-height: 1;
+      }
+      .brightness-control .ctrl-reset:active {
+        opacity: 0.6;
       }
 
       @keyframes recordingPulse {
@@ -1044,6 +1066,35 @@
         <span id="brightnessValue">100%</span>
       </div>
 
+      <!-- 🌡️ Nhiệt độ màu (cân bằng trắng) — ẩn/mở khóa như độ sáng.
+           Kéo về trái = lạnh hơn (khử đèn vàng), phải = ấm hơn. -->
+      <div
+        id="tempControl"
+        class="brightness-control rec-hidden"
+        title="Nhiệt độ màu — trái: lạnh hơn (khử đèn vàng), phải: ấm hơn (áp dụng cho cả video ghi lại)"
+      >
+        <span
+          class="ctrl-reset"
+          role="button"
+          tabindex="0"
+          title="Đặt lại nhiệt độ màu"
+          onclick="resetTemperature()"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();resetTemperature();}"
+          >🌡️</span
+        >
+        <input
+          type="range"
+          id="tempSlider"
+          aria-label="Điều chỉnh nhiệt độ màu"
+          min="-100"
+          max="100"
+          step="1"
+          value="0"
+          oninput="setTemperature(this.value)"
+        />
+        <span id="tempValue">Chuẩn</span>
+      </div>
+
       <!-- Nút Ghi Hình Mới (ẩn mặc định, mở khóa bằng 6 lần bấm vào màn hình) -->
       <button id="btnRecord" class="rec-hidden" onclick="toggleRecording()">
         🔴 Ghi Hình
@@ -1053,6 +1104,18 @@
       <button onclick="changeSource()">🔄 Nguồn</button>
       <button onclick="toggleFullscreen()">⛶ Toàn Màn Hình</button>
     </div>
+
+    <!-- 🌡️ Bộ lọc cân bằng trắng dự phòng (dùng khi không có WebGL:
+         CSS filter cho <video> và ctx.filter cho canvas ghi hình 2D) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="wbFilter" color-interpolation-filters="sRGB">
+        <feColorMatrix
+          id="wbMatrix"
+          type="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"
+        />
+      </filter>
+    </svg>
 
     <!-- 🔑 Source Selector -->
     <div id="sourceSelector" class="full-overlay hidden">
@@ -1106,6 +1169,8 @@
         if (lutLoadBtn) lutLoadBtn.classList.remove("rec-hidden");
         const brightnessCtrl = document.getElementById("brightnessControl");
         if (brightnessCtrl) brightnessCtrl.classList.remove("rec-hidden");
+        const tempCtrl = document.getElementById("tempControl");
+        if (tempCtrl) tempCtrl.classList.remove("rec-hidden");
         // Hiện nút Bật/Tắt LUT nếu đã có LUT nạp sẵn
         applyLutUiState();
       }
@@ -1211,8 +1276,18 @@
         uniform sampler2D uVideo;
         uniform sampler2D uLut;
         uniform float uBrightness;
+        uniform float uTemp;
         uniform float uLutEnabled;
         uniform float uLutSize;
+
+        // White balance (chu thich ASCII: WebGL chi chap nhan ky tu ASCII
+        // trong ma nguon shader). uTemp -1 = lanh (bot vang), +1 = am.
+        // Chuan hoa theo do sang cam nhan de khong doi do sang tong the.
+        vec3 whiteBalance(vec3 c) {
+          vec3 g = vec3(1.0 + 0.30 * uTemp, 1.0, 1.0 - 0.30 * uTemp);
+          float lum = dot(g, vec3(0.299, 0.587, 0.114));
+          return c * (g / lum);
+        }
 
         vec3 applyLUT(vec3 color) {
           float size = uLutSize;
@@ -1234,6 +1309,7 @@
         void main() {
           vec3 color = texture2D(uVideo, vUv).rgb;
           color *= uBrightness;
+          color = whiteBalance(color);
           if (uLutEnabled > 0.5) {
             color = applyLUT(clamp(color, 0.0, 1.0));
           }
@@ -1291,6 +1367,7 @@
             uVideo: gl.getUniformLocation(glProgram, "uVideo"),
             uLut: gl.getUniformLocation(glProgram, "uLut"),
             uBrightness: gl.getUniformLocation(glProgram, "uBrightness"),
+            uTemp: gl.getUniformLocation(glProgram, "uTemp"),
             uLutEnabled: gl.getUniformLocation(glProgram, "uLutEnabled"),
             uLutSize: gl.getUniformLocation(glProgram, "uLutSize"),
           };
@@ -1392,6 +1469,7 @@
           gl.uniform1i(glLocs.uLut, 1);
 
           gl.uniform1f(glLocs.uBrightness, recBrightness);
+          gl.uniform1f(glLocs.uTemp, recTemp);
           gl.uniform1f(
             glLocs.uLutEnabled,
             lutEnabled && lutLoaded ? 1.0 : 0.0,
@@ -1591,8 +1669,10 @@
       let recordTimerInterval = null;
       let recordLimitTimeout = null; // Quản lý thời gian tự động dừng
 
-      // 🔆 Độ sáng + pipeline canvas (để độ sáng được "nướng" vào file ghi)
+      // 🔆 Độ sáng + 🌡️ nhiệt độ màu + pipeline canvas
+      // (để cả hai được "nướng" vào file ghi)
       let recBrightness = 1; // 1 = 100%
+      let recTemp = 0; // -1 = lạnh nhất, 0 = chuẩn, +1 = ấm nhất
       let recCanvas = null;
       let recCtx = null;
       let recCanvasStream = null;
@@ -1609,6 +1689,73 @@
         );
         const lbl = document.getElementById("brightnessValue");
         if (lbl) lbl.textContent = val + "%";
+      }
+
+      /* ---------- 🌡️ Nhiệt độ màu (cân bằng trắng) ----------
+         Cùng công thức với shader: đỏ/lam lệch nhau, chuẩn hóa theo
+         độ sáng cảm nhận để không làm ảnh sáng/tối đi. */
+      let tempSaveTimer = null;
+
+      function wbGains(t) {
+        const r = 1 + 0.3 * t;
+        const g = 1;
+        const b = 1 - 0.3 * t;
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        return [r / lum, g / lum, b / lum];
+      }
+
+      function setTemperature(val) {
+        const pct = Math.max(-100, Math.min(100, Number(val) || 0));
+        recTemp = pct / 100;
+
+        // Dự phòng (không WebGL): cập nhật ma trận màu SVG cho <video>
+        const m = document.getElementById("wbMatrix");
+        if (m) {
+          const [r, g, b] = wbGains(recTemp);
+          m.setAttribute(
+            "values",
+            `${r} 0 0 0 0  0 ${g} 0 0 0  0 0 ${b} 0 0  0 0 0 1 0`,
+          );
+        }
+        const vid = document.getElementById("preview");
+        if (vid) vid.classList.toggle("wb-on", pct !== 0);
+
+        const lbl = document.getElementById("tempValue");
+        if (lbl) {
+          lbl.textContent =
+            pct === 0 ? "Chuẩn" : (pct < 0 ? "Lạnh " : "Ấm ") + Math.abs(pct);
+        }
+        // Hoãn ghi localStorage: kéo thanh trượt không ghi đĩa liên tục
+        clearTimeout(tempSaveTimer);
+        tempSaveTimer = setTimeout(() => {
+          try {
+            localStorage.setItem("recTemp", String(pct));
+          } catch (e) {
+            /* bỏ qua nếu localStorage đầy */
+          }
+        }, 300);
+      }
+
+      function resetTemperature() {
+        const slider = document.getElementById("tempSlider");
+        if (slider) slider.value = 0;
+        setTemperature(0);
+      }
+
+      // Khôi phục nhiệt độ màu đã lưu (gọi lúc tải trang)
+      function restoreSavedTemperature() {
+        let saved = null;
+        try {
+          saved = localStorage.getItem("recTemp");
+        } catch (e) {
+          return;
+        }
+        if (saved === null) return;
+        const pct = Number(saved);
+        if (!Number.isFinite(pct) || pct === 0) return;
+        const slider = document.getElementById("tempSlider");
+        if (slider) slider.value = pct;
+        setTemperature(pct);
       }
 
       // Hàm format giây sang MM:SS hoặc HH:MM:SS
@@ -1704,6 +1851,11 @@
             const drawFrame = () => {
               if (!recDrawActive) return;
               recCtx.filter = "brightness(" + recBrightness + ")";
+              if (recTemp !== 0) {
+                // Giá trị không hợp lệ bị bỏ qua -> vẫn giữ được độ sáng
+                recCtx.filter =
+                  "brightness(" + recBrightness + ") url(#wbFilter)";
+              }
               recCtx.drawImage(preview, 0, 0, recCanvas.width, recCanvas.height);
               recDrawRAF = requestAnimationFrame(drawFrame);
             };
@@ -2194,6 +2346,9 @@
       // 🎨 Khôi phục LUT đã lưu từ phiên trước (đặt ở cuối script để
       // mọi biến/hàm của color pipeline đã được khởi tạo xong).
       restoreSavedLut();
+
+      // 🌡️ Khôi phục nhiệt độ màu đã lưu từ phiên trước
+      restoreSavedTemperature();
 
       // 🔓 Áp dụng mở khóa đã lưu (sau khi mọi biến đã khởi tạo -> không TDZ)
       try {
