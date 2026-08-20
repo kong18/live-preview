@@ -244,6 +244,8 @@
         border-radius: inherit;
         overflow: hidden;
         transition: all 0.5s ease;
+        /* Mốc cho đơn vị cqw/cqh khi xoay khung 90°/270° */
+        container-type: size;
       }
 
       /* FULLSCREEN LAYOUT OVERRIDES */
@@ -285,7 +287,9 @@
         height: 100%;
         object-fit: cover;
         filter: brightness(var(--rec-brightness, 1));
-        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition:
+          transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+          rotate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
       /* Chi bat khi nhiet do mau khac muc chuan (tranh chi phi loc vo ich) */
       #preview.wb-on {
@@ -299,6 +303,34 @@
       }
       #preview.flipped.flipped-v {
         transform: scaleX(-1) scaleY(-1);
+      }
+
+      /* 🔁 Xoay khung hình — chỉ áp cho <video> (chế độ dự phòng không WebGL);
+         canvas WebGL đã xoay sẵn trong shader để video ghi ra cũng đúng chiều.
+         Dùng thuộc tính rotate/translate riêng để không đè lên transform lật. */
+      #preview.rot-90,
+      #preview.rot-180,
+      #preview.rot-270 {
+        object-fit: contain;
+      }
+      #preview.rot-180 {
+        rotate: 180deg;
+      }
+      /* Xoay 90°/270°: hoán đổi chiều rộng/cao rồi căn giữa khung */
+      #preview.rot-90,
+      #preview.rot-270 {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100cqh;
+        height: 100cqw;
+        translate: -50% -50%;
+      }
+      #preview.rot-90 {
+        rotate: 90deg;
+      }
+      #preview.rot-270 {
+        rotate: 270deg;
       }
 
       /* 🎨 Canvas WebGL hiển thị kết quả màu (đè lên video, dưới overlay) */
@@ -323,6 +355,11 @@
       }
       #glPreview.flipped.flipped-v {
         transform: scaleX(-1) scaleY(-1);
+      }
+      /* Khung đã xoay dọc: hiện trọn khung hình, hai bên là nền đen */
+      #glPreview.fit-contain {
+        object-fit: contain;
+        background: #000;
       }
 
       /* --- 🎛️ SIMPLE PLAYER UI --- */
@@ -1015,6 +1052,15 @@
         ↔️ Ngang
       </button>
       <button id="btnFlipV" onclick="toggleFlipV()">↕️ Dọc</button>
+      <!-- 🔁 Xoay khung hình 90° mỗi lần bấm (chuột phải = xoay ngược) -->
+      <button
+        id="btnRotate"
+        onclick="rotatePreview(90)"
+        oncontextmenu="event.preventDefault(); rotatePreview(-90);"
+        title="Xoay khung hình 90° (chuột phải: xoay ngược lại)"
+      >
+        🔁 Xoay 0°
+      </button>
       <select
         id="cameraSelect"
         class="hidden"
@@ -1254,6 +1300,10 @@
       let glLocs = {};
       let glPreviewEl = null;
 
+      // 🔁 Góc xoay khung preview: 0 | 90 | 180 | 270 (khai báo sớm vì
+      // vòng render WebGL đọc biến này mỗi khung hình)
+      let previewRotation = 0;
+
       // Trạng thái LUT
       let lutEnabled = false; // người dùng bật/tắt
       let lutLoaded = false; // đã có dữ liệu LUT trên GPU
@@ -1277,6 +1327,7 @@
         uniform sampler2D uLut;
         uniform float uBrightness;
         uniform float uTemp;
+        uniform mat2 uRotMat;
         uniform float uLutEnabled;
         uniform float uLutSize;
 
@@ -1307,7 +1358,9 @@
         }
 
         void main() {
-          vec3 color = texture2D(uVideo, vUv).rgb;
+          // Xoay toa do lay mau quanh tam khung (uRotMat la boi so 90 do)
+          vec2 uv = uRotMat * (vUv - 0.5) + 0.5;
+          vec3 color = texture2D(uVideo, uv).rgb;
           color *= uBrightness;
           color = whiteBalance(color);
           if (uLutEnabled > 0.5) {
@@ -1368,6 +1421,7 @@
             uLut: gl.getUniformLocation(glProgram, "uLut"),
             uBrightness: gl.getUniformLocation(glProgram, "uBrightness"),
             uTemp: gl.getUniformLocation(glProgram, "uTemp"),
+            uRotMat: gl.getUniformLocation(glProgram, "uRotMat"),
             uLutEnabled: gl.getUniformLocation(glProgram, "uLutEnabled"),
             uLutSize: gl.getUniformLocation(glProgram, "uLutSize"),
           };
@@ -1441,12 +1495,13 @@
 
         if (preview.readyState >= 2 && preview.videoWidth) {
           // Đồng bộ kích thước buffer canvas với độ phân giải video
-          if (
-            glPreviewEl.width !== preview.videoWidth ||
-            glPreviewEl.height !== preview.videoHeight
-          ) {
-            glPreviewEl.width = preview.videoWidth;
-            glPreviewEl.height = preview.videoHeight;
+          // (xoay 90°/270° -> hoán đổi rộng/cao để không bị cắt cạnh)
+          const swapWH = previewRotation === 90 || previewRotation === 270;
+          const bufW = swapWH ? preview.videoHeight : preview.videoWidth;
+          const bufH = swapWH ? preview.videoWidth : preview.videoHeight;
+          if (glPreviewEl.width !== bufW || glPreviewEl.height !== bufH) {
+            glPreviewEl.width = bufW;
+            glPreviewEl.height = bufH;
             gl.viewport(0, 0, glPreviewEl.width, glPreviewEl.height);
           }
 
@@ -1470,6 +1525,11 @@
 
           gl.uniform1f(glLocs.uBrightness, recBrightness);
           gl.uniform1f(glLocs.uTemp, recTemp);
+          // Ma trận xoay (cột-trước): dương = xoay theo chiều kim đồng hồ
+          const rad = (previewRotation * Math.PI) / 180;
+          const rc = Math.round(Math.cos(rad));
+          const rs = Math.round(Math.sin(rad));
+          gl.uniformMatrix2fv(glLocs.uRotMat, false, [rc, rs, -rs, rc]);
           gl.uniform1f(
             glLocs.uLutEnabled,
             lutEnabled && lutLoaded ? 1.0 : 0.0,
@@ -1843,9 +1903,13 @@
             // Dự phòng khi không có WebGL: canvas 2D chỉ áp dụng độ sáng.
             const vw = preview.videoWidth || 1920;
             const vh = preview.videoHeight || 1080;
+            // Góc xoay chốt lúc bắt đầu ghi (đổi kích thước giữa chừng
+            // sẽ làm hỏng luồng ghi)
+            const recRot = previewRotation;
+            const recSwap = recRot === 90 || recRot === 270;
             recCanvas = document.createElement("canvas");
-            recCanvas.width = vw;
-            recCanvas.height = vh;
+            recCanvas.width = recSwap ? vh : vw;
+            recCanvas.height = recSwap ? vw : vh;
             recCtx = recCanvas.getContext("2d");
             recDrawActive = true;
             const drawFrame = () => {
@@ -1856,7 +1920,11 @@
                 recCtx.filter =
                   "brightness(" + recBrightness + ") url(#wbFilter)";
               }
-              recCtx.drawImage(preview, 0, 0, recCanvas.width, recCanvas.height);
+              recCtx.save();
+              recCtx.translate(recCanvas.width / 2, recCanvas.height / 2);
+              if (recRot !== 0) recCtx.rotate((recRot * Math.PI) / 180);
+              recCtx.drawImage(preview, -vw / 2, -vh / 2, vw, vh);
+              recCtx.restore();
               recDrawRAF = requestAnimationFrame(drawFrame);
             };
             drawFrame();
@@ -2025,6 +2093,55 @@
         document
           .getElementById("btnFlipV")
           .classList.toggle("active", isFlippedV);
+      }
+
+      /* ---------- 🔁 Xoay khung preview ----------
+         Xoay được "nướng" vào canvas WebGL nên video ghi ra cũng đúng chiều;
+         thẻ <video> (chế độ dự phòng) xoay bằng CSS. */
+      function applyPreviewRotation() {
+        const swap = previewRotation === 90 || previewRotation === 270;
+        const vid = document.getElementById("preview");
+        if (vid) {
+          vid.classList.remove("rot-90", "rot-180", "rot-270");
+          if (previewRotation !== 0) {
+            vid.classList.add("rot-" + previewRotation);
+          }
+        }
+        const canvas = document.getElementById("glPreview");
+        if (canvas) canvas.classList.toggle("fit-contain", swap);
+
+        const btn = document.getElementById("btnRotate");
+        if (btn) {
+          btn.textContent = "🔁 Xoay " + previewRotation + "°";
+          btn.classList.toggle("active", previewRotation !== 0);
+        }
+      }
+
+      function rotatePreview(step) {
+        let delta = Number(step) || 90;
+        // Đang lật gương (1 trục) thì hình trên màn hình xoay ngược chiều
+        // so với khung gốc -> đảo dấu để bấm nút luôn xoay theo chiều kim đồng hồ
+        if (isFlippedH !== isFlippedV) delta = -delta;
+        previewRotation = (((previewRotation + delta) % 360) + 360) % 360;
+        applyPreviewRotation();
+        try {
+          localStorage.setItem("previewRotation", String(previewRotation));
+        } catch (e) {
+          /* bỏ qua nếu localStorage đầy */
+        }
+      }
+
+      // Khôi phục góc xoay đã lưu (gọi lúc tải trang)
+      function restoreSavedRotation() {
+        let saved = null;
+        try {
+          saved = localStorage.getItem("previewRotation");
+        } catch (e) {
+          /* localStorage không khả dụng */
+        }
+        const deg = Number(saved);
+        if (deg === 90 || deg === 180 || deg === 270) previewRotation = deg;
+        applyPreviewRotation();
       }
 
       function stopStream() {
@@ -2349,6 +2466,9 @@
 
       // 🌡️ Khôi phục nhiệt độ màu đã lưu từ phiên trước
       restoreSavedTemperature();
+
+      // 🔁 Khôi phục góc xoay khung preview + đồng bộ nhãn nút
+      restoreSavedRotation();
 
       // 🔓 Áp dụng mở khóa đã lưu (sau khi mọi biến đã khởi tạo -> không TDZ)
       try {
