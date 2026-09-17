@@ -14,7 +14,7 @@ const rateLimit = require("./_lib/rate-limit");
  *   { key, fingerprint, userAgent }
  *
  * Response:
- *   { success, plan, expires_at, activated_at, features }
+ *   { success, plan, expires_at, activated_at, pro, features }
  */
 module.exports = async (req, res) => {
   // CORS headers
@@ -128,12 +128,22 @@ module.exports = async (req, res) => {
     await kv.ltrim(`audit:log:${hashedKey}`, 0, 99);
 
     // 8. Return success (do NOT return plain key)
+    const isPro = license.pro === "true" || license.pro === true;
+
     return res.status(200).json({
       success: true,
       plan: license.plan,
       expires_at: license.expires_at,
       activated_at: license.activated_at,
-      features: ["webcam", "screen-share", "flip", "fullscreen"],
+      // Cong cu Pro chi mo khi admin bat co pro cho license nay
+      pro: isPro,
+      features: [
+        "webcam",
+        "screen-share",
+        "flip",
+        "fullscreen",
+        ...(isPro ? ["pro-tools"] : []),
+      ],
     });
   } catch (err) {
     console.error("Activate error:", err);

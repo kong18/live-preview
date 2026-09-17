@@ -9,7 +9,7 @@ const { hashKey } = require("./_lib/license-utils");
  *   { key, fingerprint }
  *
  * Response:
- *   { valid: boolean, expires_at?, remaining_ms?, error? }
+ *   { valid: boolean, expires_at?, remaining_ms?, pro?, error? }
  */
 module.exports = async (req, res) => {
   // CORS headers
@@ -75,6 +75,9 @@ module.exports = async (req, res) => {
       valid: true,
       expires_at: license.expires_at,
       remaining_ms: remainingMs,
+      // Cong cu Pro (ghi hinh / LUT / do sang / nhiet do mau) chi bat khi
+      // license duoc admin danh dau pro=true.
+      pro: license.pro === "true" || license.pro === true,
     });
   } catch (err) {
     console.error("Validate error:", err);

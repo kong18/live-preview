@@ -6,7 +6,7 @@ const { requireAuth } = require("../../_lib/admin-auth");
  * Update a license (revoke, etc.)
  *
  * Request:
- *   { revoked: boolean, expires_at?: number }
+ *   { revoked: boolean, expires_at?: number, pro?: boolean }
  *
  * Response:
  *   { success: boolean, message: string }
@@ -63,6 +63,7 @@ async function handleGetStatus(hash, res) {
       plan: license.plan,
       // ✅ Ensure revoked is always boolean
       revoked: license.revoked === "true" || license.revoked === true,
+      pro: license.pro === "true" || license.pro === true,
       bound_fingerprint: license.bound_fingerprint || null,
       activated_at: license.activated_at,
       created_at: license.created_at,
@@ -80,7 +81,7 @@ async function handleGetStatus(hash, res) {
  * Update license (revoke, etc.)
  */
 async function handleUpdateKey(hash, req, res) {
-  const { revoked, expires_at } = req.body;
+  const { revoked, expires_at, pro } = req.body;
 
   try {
     const license = await kv.hgetall(`license:${hash}`);
@@ -99,6 +100,10 @@ async function handleUpdateKey(hash, req, res) {
     }
     if (expires_at !== undefined) {
       updates.expires_at = expires_at ? expires_at.toString() : "null";
+    }
+    // Co Pro: mo/khoa bo cong cu Ghi hinh + LUT + Do sang + Nhiet do mau
+    if (typeof pro === "boolean") {
+      updates.pro = pro ? "true" : "false";
     }
 
     if (Object.keys(updates).length > 0) {

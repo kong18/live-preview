@@ -1201,9 +1201,18 @@
       updateClock();
 
       /* =======================================================
-           🔓 MỞ KHÓA GHI HÌNH + LUT (bấm 6 lần liên tiếp vào màn hình)
+           🔓 CÔNG CỤ PRO (Ghi hình / LUT / Độ sáng / Nhiệt độ màu)
+           -------------------------------------------------------
+           Quyền dùng do SERVER quyết định: license phải được bật cờ
+           "pro" trong trang admin. Đã bỏ hoàn toàn kiểu mở khóa bằng
+           thao tác bấm nhiều lần vào màn hình (đã bị lộ).
            ======================================================= */
       let recUnlocked = false;
+
+      // Khóa lưu quyền Pro trên máy. Đổi PRO_CACHE_SALT sẽ vô hiệu
+      // toàn bộ quyền đã lưu trên mọi máy (kill switch).
+      const PRO_CACHE_KEY = "pro_tools_v2";
+      const PRO_CACHE_SALT = "filmong-pro-2026-09";
 
       // Hiện nút Ghi Hình + bộ điều khiển LUT + độ sáng.
       // (Khai báo hàm -> được hoisted, an toàn khi gọi ở cuối script.)
@@ -1221,38 +1230,75 @@
         applyLutUiState();
       }
 
-      (function setupRecordUnlock() {
-        const wrapper = document.querySelector(".preview-wrapper");
-        if (!wrapper) return;
-
-        // Mở khóa đã lưu sẽ được áp dụng ở CUỐI script (sau khi mọi biến của
-        // color pipeline đã khởi tạo) để tránh lỗi truy cập biến trong TDZ.
-        if (localStorage.getItem("recUnlocked") === "1") return;
-
-        const UNLOCK_CLICKS = 6;
-        const WINDOW_MS = 3000; // 6 cú bấm phải nằm trong 3 giây kể từ cú đầu
-        let clickCount = 0;
-        let windowTimer = null;
-
-        wrapper.addEventListener("click", () => {
-          if (recUnlocked) return; // đã mở khóa
-
-          clickCount++;
-          if (clickCount === 1) {
-            windowTimer = setTimeout(() => {
-              clickCount = 0;
-            }, WINDOW_MS);
-          }
-
-          if (clickCount >= UNLOCK_CLICKS) {
-            clearTimeout(windowTimer);
-            clickCount = 0;
-            localStorage.setItem("recUnlocked", "1");
-            revealProTools();
-            showNotification("🎬 Đã mở khóa Ghi Hình + LUT!");
-          }
+      // Ẩn lại toàn bộ công cụ Pro khi license không (còn) được cấp quyền.
+      function hideProTools() {
+        recUnlocked = false;
+        [
+          "btnRecord",
+          "btnLutLoad",
+          "btnLutToggle",
+          "brightnessControl",
+          "tempControl",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add("rec-hidden");
         });
-      })();
+        // Đang ghi dở mà bị thu quyền -> dừng và lưu lại video
+        if (isRecording) stopRecording();
+        applyLutUiState();
+      }
+
+      /* ---------- Quyền Pro gắn với license trên server ----------
+         Token ghi nhớ được băm từ license key + vân tay máy, nên chép
+         cờ sang máy khác hoặc dùng license khác đều không khớp. */
+      async function proCacheToken() {
+        const key = localStorage.getItem("license_key");
+        const fp = localStorage.getItem("license_fingerprint");
+        if (!key || !fp) return null;
+        const buf = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(key + "|" + fp + "|" + PRO_CACHE_SALT),
+        );
+        return Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      }
+
+      // Server trả về pro=true/false -> cấp hoặc thu quyền trên máy này.
+      async function applyProEntitlement(isPro) {
+        try {
+          if (isPro) {
+            revealProTools();
+            const token = await proCacheToken();
+            if (token) localStorage.setItem(PRO_CACHE_KEY, token);
+          } else {
+            hideProTools();
+            localStorage.removeItem(PRO_CACHE_KEY);
+          }
+        } catch (e) {
+          /* localStorage/crypto không khả dụng -> bỏ qua phần ghi nhớ */
+        }
+      }
+
+      // Lúc tải trang: khôi phục quyền đã được cấp trước đó (dùng được cả
+      // khi mất mạng). Server vẫn có quyền thu hồi ở lần kiểm tra kế tiếp.
+      async function restoreProAccess() {
+        // 🚫 Thu hồi cờ mở khóa cũ (kiểu bấm 6 lần) trên mọi máy
+        try {
+          localStorage.removeItem("recUnlocked");
+        } catch (e) {
+          return;
+        }
+        try {
+          const saved = localStorage.getItem(PRO_CACHE_KEY);
+          if (!saved) return;
+          const token = await proCacheToken();
+          if (token && saved === token) revealProTools();
+          else localStorage.removeItem(PRO_CACHE_KEY);
+        } catch (e) {
+          /* bỏ qua */
+        }
+      }
 
       function toggleGrid() {
         document.getElementById("gridOverlay").classList.toggle("visible");
@@ -2340,6 +2386,7 @@
             return;
           }
           licenseInfo = data;
+          applyProEntitlement(data.pro === true);
           localStorage.setItem("license_key", key);
           localStorage.setItem("license_fingerprint", fingerprint);
           localStorage.setItem("license_expires", data.expires_at || "null");
@@ -2367,9 +2414,13 @@
           if (data.valid) {
             licenseInfo = data;
             localStorage.setItem("license_last_check", Date.now().toString());
+            applyProEntitlement(data.pro === true);
             return true;
           }
+          // Server trả lời rõ là không hợp lệ -> thu quyền Pro ngay
+          applyProEntitlement(false);
         } catch (err) {
+          // Lỗi mạng: giữ nguyên quyền đang có (chế độ ân hạn offline)
           return checkOfflineGrace();
         }
         return false;
@@ -2451,6 +2502,7 @@
             startLicenseHeartbeat();
             return;
           } else {
+            applyProEntitlement(false);
             localStorage.removeItem("license_key");
             localStorage.removeItem("license_fingerprint");
           }
@@ -2470,12 +2522,8 @@
       // 🔁 Khôi phục góc xoay khung preview + đồng bộ nhãn nút
       restoreSavedRotation();
 
-      // 🔓 Áp dụng mở khóa đã lưu (sau khi mọi biến đã khởi tạo -> không TDZ)
-      try {
-        if (localStorage.getItem("recUnlocked") === "1") revealProTools();
-      } catch (e) {
-        /* localStorage không khả dụng -> bỏ qua */
-      }
+      // 🔓 Thu hồi cờ mở khóa cũ + khôi phục quyền Pro hợp lệ của máy này
+      restoreProAccess();
     </script>
   </body>
 </html>
