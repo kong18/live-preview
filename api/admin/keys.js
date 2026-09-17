@@ -18,7 +18,7 @@ const { requireAuth } = require("../_lib/admin-auth");
  * Create new license keys
  *
  * Request:
- *   { quantity: number, plan: string ('30d'|'90d'|'365d'|'perpetual') }
+ *   { quantity: number, plan: string ('30d'|'90d'|'365d'|'perpetual'), pro?: boolean }
  *
  * Response:
  *   { keys: string[], plan: string, expiresAt: number|null }
@@ -64,6 +64,8 @@ function mapLicense(hash, license) {
     plan: license.plan,
     // ✅ Always ensure revoked is boolean (handle both "true"/"false" strings and missing values)
     revoked: license.revoked === "true" || license.revoked === true,
+    // Co Pro: license nay co duoc dung Ghi hinh / LUT / Do sang / Nhiet do mau
+    pro: license.pro === "true" || license.pro === true,
     bound_fingerprint: license.bound_fingerprint ? "bound" : "unbound",
     created_at: license.created_at,
     expires_at: license.expires_at,
@@ -159,7 +161,7 @@ async function handleListKeys(req, res) {
  * Create new license keys
  */
 async function handleCreateKeys(req, res) {
-  const { quantity = 1, plan = "30d" } = req.body;
+  const { quantity = 1, plan = "30d", pro = false } = req.body;
 
   // Validate
   if (!quantity || quantity < 1 || quantity > 1000) {
@@ -197,6 +199,8 @@ async function handleCreateKeys(req, res) {
         plain_key: plainKey,
         expires_at: expiresAt ? expiresAt.toString() : "null",
         revoked: "false",
+        // Mac dinh KHONG co quyen Pro; bat rieng tung key trong trang admin
+        pro: pro === true ? "true" : "false",
         created_at: now.toString(),
       });
 

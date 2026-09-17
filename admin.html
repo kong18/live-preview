@@ -582,6 +582,15 @@
                   <option value="perpetual">Perpetual</option>
                 </select>
               </div>
+              <div class="field">
+                <label for="createPro">Công cụ Pro</label>
+                <select id="createPro">
+                  <option value="false">Không (mặc định)</option>
+                  <option value="true">
+                    Có — Ghi hình / LUT / Độ sáng / Nhiệt độ màu
+                  </option>
+                </select>
+              </div>
             </div>
             <div class="actions">
               <button class="btn-primary" id="createBtn">Create Keys</button>
@@ -632,6 +641,7 @@
                 <th>Key Hash</th>
                 <th>Plan</th>
                 <th>Status</th>
+                <th>Pro</th>
                 <th>Binding</th>
                 <th>Created</th>
                 <th>Expires</th>
@@ -640,7 +650,7 @@
             </thead>
             <tbody id="licenseRows">
               <tr>
-                <td colspan="8">
+                <td colspan="9">
                   <div class="empty">
                     Chưa có dữ liệu. Hãy login rồi bấm
                     <strong>Refresh List</strong> hoặc
@@ -684,6 +694,7 @@
         logoutBtn: document.getElementById("logoutBtn"),
         quantity: document.getElementById("quantity"),
         plan: document.getElementById("plan"),
+        createPro: document.getElementById("createPro"),
         createBtn: document.getElementById("createBtn"),
         refreshBtn: document.getElementById("refreshBtn"),
         exportBtn: document.getElementById("exportBtn"),
@@ -812,6 +823,12 @@
         return '<span class="badge badge-warn">⊙ Unbound</span>';
       }
 
+      function proBadge(license) {
+        return license.pro
+          ? '<span class="badge badge-ok">★ Pro</span>'
+          : '<span class="badge badge-warn">— Basic</span>';
+      }
+
       function renderCreatedKeys() {
         if (!state.createdKeys.length) {
           el.createdKeysWrap.classList.add("hidden");
@@ -870,7 +887,7 @@
             : "Chưa có license nào. Hãy tạo key đầu tiên.";
           el.licenseRows.innerHTML = `
           <tr>
-            <td colspan="8">
+            <td colspan="9">
               <div class="empty">${emptyMsg}</div>
             </td>
           </tr>
@@ -901,6 +918,8 @@
 
             // Check if already revoked
             const isRevoked = license.revoked === true || license.revoked === "true";
+            // Cờ Pro: license này có được dùng bộ công cụ Pro không
+            const isPro = license.pro === true || license.pro === "true";
 
             return `
         <tr>
@@ -913,11 +932,15 @@
           </td>
           <td>${license.plan || "—"}</td>
           <td>${statusBadge(license)}</td>
+          <td>${proBadge(license)}</td>
           <td class="muted">${license.bound_fingerprint || "unbound"}</td>
           <td>${formatDate(license.created_at)}</td>
           <td>${formatDate(license.expires_at)}</td>
           <td>
             <div class="table-actions">
+              <button class="btn-ghost" data-pro-hash="${fullHash}" data-pro-next="${isPro ? "false" : "true"}" ${!fullHash ? "disabled" : ""} title="${isPro ? "Thu quyền dùng công cụ Pro" : "Cấp quyền dùng công cụ Pro"}">
+                ${isPro ? "Tắt Pro" : "Bật Pro"}
+              </button>
               <button class="btn-danger" data-revoke-hash="${fullHash}" ${!fullHash || isRevoked ? "disabled" : ""} title="${isRevoked ? "Already revoked" : "Revoke this license"}">
                 ${isRevoked ? "Revoked" : "Revoke"}
               </button>
@@ -957,6 +980,14 @@
               }
             });
           });
+
+        el.licenseRows.querySelectorAll("[data-pro-hash]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const hash = button.dataset.proHash;
+            if (!hash) return;
+            await setProFlag(hash, button.dataset.proNext === "true");
+          });
+        });
 
         el.licenseRows
           .querySelectorAll("[data-revoke-hash]")
@@ -1018,6 +1049,8 @@
             key: item.key || null,
             // Explicitly ensure revoked is a boolean
             revoked: item.revoked === true || item.revoked === "true",
+            // Cờ công cụ Pro (server trả về boolean)
+            pro: item.pro === true || item.pro === "true",
           }));
           state.pagination = data.pagination || state.pagination;
           renderLicenses();
@@ -1043,6 +1076,7 @@
 
         const quantity = Number(el.quantity.value || 1);
         const plan = el.plan.value;
+        const pro = el.createPro.value === "true";
 
         el.createBtn.disabled = true;
         el.createBtn.textContent = "Creating...";
@@ -1053,7 +1087,7 @@
           const res = await fetch("/api/admin/keys", {
             method: "POST",
             headers: authHeaders(),
-            body: JSON.stringify({ quantity, plan }),
+            body: JSON.stringify({ quantity, plan, pro }),
           });
           const data = await res.json();
 
@@ -1066,7 +1100,7 @@
           setAlert(
             el.keyAlert,
             "success",
-            `Đã tạo ${state.createdKeys.length} key cho plan ${plan}.`,
+            `Đã tạo ${state.createdKeys.length} key cho plan ${plan}${pro ? " (có công cụ Pro)" : ""}.`,
           );
           await refreshLicenses(1);
         } catch (error) {
@@ -1078,6 +1112,50 @@
         } finally {
           el.createBtn.disabled = false;
           el.createBtn.textContent = "Create Keys";
+        }
+      }
+
+      // Bật/tắt quyền dùng công cụ Pro cho một license.
+      // Máy đang mở sẽ mất/được công cụ ở lần kiểm tra license kế tiếp
+      // (heartbeat 5 phút) hoặc ngay khi tải lại trang.
+      async function setProFlag(hash, pro) {
+        if (!state.token) return;
+
+        if (!hash || !/^[a-f0-9]{64}$/.test(hash)) {
+          setAlert(
+            el.keyAlert,
+            "error",
+            "Invalid license hash format. Please refresh and try again.",
+          );
+          return;
+        }
+
+        try {
+          const res = await fetch(`/api/admin/keys/${hash}`, {
+            method: "PATCH",
+            headers: authHeaders(),
+            body: JSON.stringify({ pro }),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.message || data.error || "Update failed");
+          }
+
+          setAlert(
+            el.keyAlert,
+            "success",
+            pro
+              ? "Đã cấp quyền công cụ Pro cho license này."
+              : "Đã thu quyền công cụ Pro của license này.",
+          );
+          await refreshLicenses();
+        } catch (error) {
+          setAlert(
+            el.keyAlert,
+            "error",
+            error.message || "Không đổi được cờ Pro.",
+          );
         }
       }
 
@@ -1131,6 +1209,7 @@
             "hash",
             "plan",
             "revoked",
+            "pro",
             "bound_fingerprint",
             "created_at",
             "expires_at",
@@ -1140,6 +1219,7 @@
             license.hash,
             license.plan,
             license.revoked ? "true" : "false",
+            license.pro ? "true" : "false",
             license.bound_fingerprint || "",
             license.created_at || "",
             license.expires_at || "",
